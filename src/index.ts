@@ -14,14 +14,17 @@ const client = new Client({
 });
 
 client.once('ready', () => {
-    DebugUtils.debug('[Startup] refreshing commands for joined guilds');
-    prisma.guild.findMany().then((guilds) => {
+    DebugUtils.debug('[Startup] Refreshing commands for joined guilds');
+    prisma.guild.findMany().then(async (guilds) => {
         if (!guilds.length) {
             DebugUtils.debug('[Startup] No guilds in db');
         }
-        guilds.forEach((guild) => {
-            deployCommands({ guildId: guild.guildId });
-        });
+
+        for (const guild of guilds) {
+            await deployCommands({ guildId: guild.guildId });
+        }
+
+        DebugUtils.debug('[Startup] Successfully refreshed commands for joined guilds');
     });
 });
 
@@ -33,8 +36,8 @@ client.on('guildCreate', (guild) => {
             },
         })
         .then((guild) => {
-            deployCommands({ guildId: guild.guildId });
             DebugUtils.debug(`[DB Guild] Created guild with guild id ${guild.guildId}`);
+            deployCommands({ guildId: guild.guildId });
         })
         .catch((e) => DebugUtils.error(`[DB Guild] Error creating guild: ${e}`));
 });

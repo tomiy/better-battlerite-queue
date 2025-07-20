@@ -12,8 +12,12 @@ datasource db {
 }
 
 model Guild {
-  id      Int    @id @default(autoincrement())
-  guildId String @unique
+  id                 Int     @id @default(autoincrement())
+  guildId            String  @unique
+  botCommandsChannel String?
+  queueChannel       String?
+  botModRole         String?
+  queueRole          String?
 }
 
 model User {

@@ -11,12 +11,16 @@ type DeployCommandsProps = {
     guildId: string;
 };
 
-export function deployCommands({ guildId }: DeployCommandsProps) {
+export async function deployCommands({ guildId }: DeployCommandsProps) {
     DebugUtils.debug(`[Deploy commands] Started refreshing application (/) commands for guild ${guildId}`);
 
-    rest.put(Routes.applicationGuildCommands(config.DISCORD_CLIENT_ID, guildId), {
-        body: commandsData,
-    })
-        .then(() => DebugUtils.debug(`[Deploy commands] Successfully reloaded application (/) commands for guild ${guildId}`))
-        .catch((e) => DebugUtils.error(`[Deploy commands] Deploy failed: ${e}`));
+    try {
+        await rest.put(Routes.applicationGuildCommands(config.DISCORD_CLIENT_ID, guildId), {
+            body: commandsData,
+        });
+
+        DebugUtils.debug(`[Deploy commands] Successfully reloaded application (/) commands for guild ${guildId}`);
+    } catch (e) {
+        DebugUtils.error(`[Deploy commands] Deploy failed: ${e}`);
+    }
 }
