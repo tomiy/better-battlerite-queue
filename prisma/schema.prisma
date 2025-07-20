@@ -17,6 +17,7 @@ model Guild {
   botCommandsChannel String?
   queueChannel       String?
   botModRole         String?
+  registeredRole     String?
   queueRole          String?
 }
 

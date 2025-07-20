@@ -2,10 +2,41 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder,
 import { PrismaClient } from '../../../.prisma';
 import { DebugUtils } from '../../debug.utils';
 
-export const data = new SlashCommandBuilder().setName('settings').setDescription('Change bot settings');
+export const data = new SlashCommandBuilder()
+    .setName('settings')
+    .setDescription('Change bot settings')
+    .addSubcommandGroup((subcommandGroup) => {
+        return subcommandGroup
+            .setName('channels')
+            .setDescription('Define the bot channels')
+            .addSubcommand((subcommand) => {
+                return subcommand.setName('commandschannel').setDescription('Define the commands channel');
+            })
+            .addSubcommand((subcommand) => {
+                return subcommand.setName('queuechannel').setDescription('Define the queue channel');
+            });
+    })
+    .addSubcommandGroup((subcommandGroup) => {
+        return subcommandGroup
+            .setName('roles')
+            .setDescription('Define the bot roles')
+            .addSubcommand((subcommand) => {
+                return subcommand.setName('botmodrole').setDescription('Define the bot moderator role');
+            })
+            .addSubcommand((subcommand) => {
+                return subcommand.setName('registeredrole').setDescription('Define the registered role');
+            })
+            .addSubcommand((subcommand) => {
+                return subcommand.setName('queuerole').setDescription('Define the queue role');
+            });
+    });
 
 export async function execute(interaction: CommandInteraction) {
     const prisma = new PrismaClient();
+
+    if (!interaction.isChatInputCommand()) {
+        return;
+    }
 
     if (interaction.member?.user.id === interaction.guild?.ownerId) {
         const commandsChannelSelect = new ChannelSelectMenuBuilder().setCustomId('commandsChannelSelect').setPlaceholder('Commands channel').setChannelTypes([ChannelType.GuildText]);
@@ -17,15 +48,38 @@ export async function execute(interaction: CommandInteraction) {
         const botModRoleSelect = new RoleSelectMenuBuilder().setCustomId('botModRoleSelect').setPlaceholder('Bot Moderator role');
         const botModRoleRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(botModRoleSelect);
 
+        const registeredRoleSelect = new RoleSelectMenuBuilder().setCustomId('registeredRoleSelect').setPlaceholder('Registered role');
+        const registeredRoleRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(registeredRoleSelect);
+
         const queueRoleSelect = new RoleSelectMenuBuilder().setCustomId('queueRoleSelect').setPlaceholder('Queue role');
         const queueRoleRow = new ActionRowBuilder<RoleSelectMenuBuilder>().addComponents(queueRoleSelect);
 
         const confirmButton = new ButtonBuilder().setCustomId('confirmButton').setLabel('Confirm').setStyle(ButtonStyle.Success);
         const confirmButtonRow = new ActionRowBuilder<ButtonBuilder>().addComponents(confirmButton);
 
+        const components = [];
+        switch (interaction.options.getSubcommand()) {
+            case 'commandschannel':
+                components.push(commandsChannelRow);
+                break;
+            case 'queuechannel':
+                components.push(queueChannelRow);
+                break;
+            case 'botmodrole':
+                components.push(botModRoleRow);
+                break;
+            case 'registeredrole':
+                components.push(registeredRoleRow);
+                break;
+            case 'queuerole':
+                components.push(queueRoleRow);
+                break;
+        }
+        components.push(confirmButtonRow);
+
         const channelMessage = await interaction.reply({
             content: 'Select the relevant discord channels and roles for each function: ',
-            components: [commandsChannelRow, queueChannelRow, botModRoleRow, queueRoleRow, confirmButtonRow],
+            components: components,
             withResponse: true,
         });
 
@@ -78,6 +132,17 @@ export async function execute(interaction: CommandInteraction) {
                                 },
                             });
                             await i.update({ content: 'Bot Moderator role updated!' });
+                            break;
+                        case 'registeredRoleSelect':
+                            await prisma.guild.update({
+                                where: {
+                                    guildId: interaction.guildId!,
+                                },
+                                data: {
+                                    registeredRole: i.values[0],
+                                },
+                            });
+                            await i.update({ content: 'Registered role updated!' });
                             break;
                         case 'queueRoleSelect':
                             await prisma.guild.update({

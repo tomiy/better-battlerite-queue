@@ -10,7 +10,7 @@ export async function botModGuard(interaction: CommandInteraction, callback: (gu
         },
     });
 
-    if (!guild?.botCommandsChannel || !guild.queueChannel || !guild?.botModRole || !guild.queueRole) {
+    if (!guild?.botCommandsChannel || !guild.queueChannel || !guild.botModRole || !guild.registeredRole || !guild.queueRole) {
         await interaction.reply({ content: 'Bot is not setup. Run /settings and fill out the values', flags: MessageFlags.Ephemeral });
         return;
     }
