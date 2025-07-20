@@ -1,0 +1,9 @@
+node_modules
+coverage
+dist
+
+.env
+
+prisma/migrations
+.prisma
+db.sqlite
