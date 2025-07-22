@@ -3,7 +3,8 @@ import { PrismaClient } from '../.prisma';
 import { commands } from './commands';
 import { config } from './config';
 import { DebugLevel, DebugUtils } from './debug.utils';
-import { deployCommands } from './deploy-commands';
+import { deployCommands } from './init/deploy-commands';
+import { initSettings } from './init/init-settings';
 
 DebugUtils.setDebugLevel(((config.DEBUG_LEVEL || 2) as DebugLevel) || DebugLevel.WARNING);
 
@@ -13,44 +14,51 @@ const client = new Client({
     intents: ['Guilds', 'GuildMessages', 'DirectMessages'],
 });
 
-client.once('ready', () => {
+client.once('ready', async () => {
     DebugUtils.debug('[Startup] Refreshing commands for joined guilds');
-    prisma.guild.findMany().then(async (guilds) => {
-        if (!guilds.length) {
-            DebugUtils.debug('[Startup] No guilds in db');
-        }
+    const guilds = await prisma.guild.findMany();
 
-        for (const guild of guilds) {
-            await deployCommands({ guildId: guild.guildId });
-        }
+    if (!guilds.length) {
+        DebugUtils.debug('[Startup] No guilds in db');
+    }
 
-        DebugUtils.debug('[Startup] Successfully refreshed commands for joined guilds');
-    });
+    for (const guild of guilds) {
+        await deployCommands({ guildId: guild.guildId });
+
+        const clientGuild = client.guilds.cache.get(guild.guildId);
+        if (client.user?.id && clientGuild) {
+            await initSettings(client.user.id, clientGuild);
+        }
+    }
+
+    DebugUtils.debug('[Startup] Successfully refreshed commands for joined guilds');
+
+    console.log('Bot has started!'); // Unconditional log
 });
 
-client.on('guildCreate', (guild) => {
-    prisma.guild
-        .create({
-            data: {
-                guildId: guild.id,
-            },
-        })
-        .then((guild) => {
-            DebugUtils.debug(`[DB Guild] Created guild with guild id ${guild.guildId}`);
-            deployCommands({ guildId: guild.guildId });
-        })
-        .catch((e) => DebugUtils.error(`[DB Guild] Error creating guild: ${e}`));
+client.on('guildCreate', async (guild) => {
+    try {
+        const createdGuild = await prisma.guild.create({ data: { guildId: guild.id } });
+
+        if (createdGuild) {
+            DebugUtils.debug(`[DB Guild] Created guild with guild id ${createdGuild.guildId}`);
+            deployCommands({ guildId: createdGuild.guildId });
+        }
+    } catch (e) {
+        DebugUtils.error(`[DB Guild] Error creating guild: ${e}`);
+    }
 });
 
-client.on('guildDelete', (guild) => {
-    prisma.guild
-        .delete({
-            where: {
-                guildId: guild.id,
-            },
-        })
-        .then((guild) => DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${guild.guildId}`))
-        .catch((e) => DebugUtils.error(`[DB Guild] Error deleting guild: ${e}`));
+client.on('guildDelete', async (guild) => {
+    try {
+        const deletedGuild = await prisma.guild.delete({ where: { guildId: guild.id } });
+
+        if (deletedGuild) {
+            DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${deletedGuild.guildId}`);
+        }
+    } catch (e) {
+        DebugUtils.error(`[DB Guild] Error deleting guild: ${e}`);
+    }
 });
 
 client.on('interactionCreate', (interaction) => {

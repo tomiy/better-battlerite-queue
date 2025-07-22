@@ -2,26 +2,30 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
-  output   = "../.prisma"
+    provider = "prisma-client-js"
+    output   = "../.prisma"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+    provider = "sqlite"
+    url      = env("DATABASE_URL")
 }
 
 model Guild {
-  id                 Int     @id @default(autoincrement())
-  guildId            String  @unique
-  botCommandsChannel String?
-  queueChannel       String?
-  botModRole         String?
-  registeredRole     String?
-  queueRole          String?
+    id                 Int     @id @default(autoincrement())
+    guildId            String  @unique
+    botCommandsChannel String?
+    queueChannel       String?
+    botModRole         String?
+    registeredRole     String?
+    queueRole          String?
+    users              User[]
 }
 
 model User {
-  id     Int    @id @default(autoincrement())
-  userId String @unique
+    id         Int    @id @default(autoincrement())
+    userId     String @unique
+    guild      Guild  @relation(fields: [guildId], references: [guildId])
+    guildId    String
+    inGameName String
 }

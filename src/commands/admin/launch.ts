@@ -1,10 +1,12 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, CommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder, TextChannel } from 'discord.js';
+import { ActionRowBuilder, ButtonBuilder, ButtonStyle, channelMention, CommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder, TextChannel } from 'discord.js';
+import { PrismaClient } from '../../../.prisma';
 import { botModGuard } from '../../guards/bot-mod.guard';
 
 export const data = new SlashCommandBuilder().setName('launch').setDescription('Starts the queue');
 
 export async function execute(interaction: CommandInteraction) {
     botModGuard(interaction, async (guild) => {
+        const prisma = new PrismaClient();
         const queueChannel = interaction.client.channels.cache.get(guild.queueChannel!);
 
         if (!queueChannel) {
@@ -24,11 +26,22 @@ export async function execute(interaction: CommandInteraction) {
             const buttonCollector = queueMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
             buttonCollector?.on('collect', async (i) => {
+                const user = await prisma.user.findFirst({ where: { userId: i.user.id, guildId: i.guildId } });
                 switch (i.customId) {
                     case 'queueButton':
+                        if (!user) {
+                            await i.reply({ content: `You are not registered! Use /register in ${channelMention(guild.botCommandsChannel!)}`, flags: MessageFlags.Ephemeral });
+                            return;
+                        }
+
+                        // TODO: push user id to queue table
+                        // TODO: check if match can be created
+                        await i.member.roles.add(guild.queueRole!);
                         await i.reply({ content: 'Queue joined!', flags: MessageFlags.Ephemeral });
                         break;
                     case 'leaveButton':
+                        // TODO: remove user id from queue table
+                        await i.member.roles.remove(guild.queueRole!);
                         await i.reply({ content: 'Queue left!', flags: MessageFlags.Ephemeral });
                         break;
                 }
