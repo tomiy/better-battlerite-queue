@@ -1,0 +1,78 @@
+import { CategoryChannel, ChannelType, Guild, TextChannel } from 'discord.js';
+import { PrismaClient } from '../../.prisma';
+import { DebugUtils } from '../debug.utils';
+
+const categoryChannelName = 'Better Battlerite Queue';
+const botCommandsChannelName = 'bbq-bot-commands';
+const queueChannelName = 'bbq-queue';
+
+export async function setupChannels(guild: Guild) {
+    const prisma = new PrismaClient();
+
+    try {
+        DebugUtils.debug(`[Setup channels] Syncing channels for guild ${guild.id}`);
+
+        let categoryChannel = guild.channels.cache.find((c) => c.name === categoryChannelName) as CategoryChannel | undefined;
+        let botCommandsChannel = guild.channels.cache.find((c) => c.name === botCommandsChannelName && c.parent?.name === categoryChannelName) as TextChannel | undefined;
+        let queueChannel = guild.channels.cache.find((c) => c.name === queueChannelName && c.parent?.name === categoryChannelName) as TextChannel | undefined;
+
+        if (!categoryChannel) {
+            DebugUtils.debug(`[Setup channels] Creating category channel ${categoryChannelName}`);
+
+            categoryChannel = await guild.channels.create({
+                name: categoryChannelName,
+                type: ChannelType.GuildCategory,
+                position: 0,
+            });
+
+            if (!categoryChannel) {
+                DebugUtils.error('[Setup channels] Could not create category channel');
+                return;
+            }
+        }
+
+        if (!botCommandsChannel) {
+            DebugUtils.debug(`[Setup channels] Creating channel ${botCommandsChannelName}`);
+
+            botCommandsChannel = await guild.channels.create({
+                name: botCommandsChannelName,
+                parent: categoryChannel,
+                type: ChannelType.GuildText,
+            });
+
+            if (!botCommandsChannel) {
+                DebugUtils.error('[Setup channels] Could not create bot commands channel');
+                return;
+            }
+        }
+
+        if (!queueChannel) {
+            DebugUtils.debug(`[Setup channels] Creating channel ${queueChannelName}`);
+
+            queueChannel = await guild.channels.create({
+                name: queueChannelName,
+                parent: categoryChannel,
+                type: ChannelType.GuildText,
+            });
+
+            if (!queueChannel) {
+                DebugUtils.error('[Setup channels] Could not create queue channel');
+                return;
+            }
+        }
+
+        await queueChannel.bulkDelete(100);
+
+        await prisma.guild.update({
+            where: { guildDiscordId: guild.id },
+            data: {
+                botCommandsChannel: botCommandsChannel.id,
+                queueChannel: queueChannel.id,
+            },
+        });
+
+        DebugUtils.debug(`[Setup channels] Successfully synced channels for guild ${guild.id}`);
+    } catch (e) {
+        DebugUtils.error(`[Setup channels] Error: ${e}`);
+    }
+}

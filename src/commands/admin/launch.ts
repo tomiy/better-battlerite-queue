@@ -10,7 +10,7 @@ export async function execute(interaction: CommandInteraction) {
         const queueChannel = interaction.client.channels.cache.get(guild.queueChannel!);
 
         if (!queueChannel) {
-            interaction.reply({ content: 'Queue channel does not exist, check /settings', flags: MessageFlags.Ephemeral });
+            interaction.reply({ content: 'Queue channel does not exist, check settings', flags: MessageFlags.Ephemeral });
             return;
         }
 

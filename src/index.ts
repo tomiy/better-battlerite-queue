@@ -3,15 +3,17 @@ import { PrismaClient } from '../.prisma';
 import { commands } from './commands';
 import { config } from './config';
 import { DebugLevel, DebugUtils } from './debug.utils';
+import { cleanup } from './init/cleanup';
 import { deployCommands } from './init/deploy-commands';
-import { initSettings } from './init/init-settings';
+import { setupChannels } from './init/setup-channels';
+import { setupRoles } from './init/setup-roles';
 
 DebugUtils.setDebugLevel(((config.DEBUG_LEVEL || 2) as DebugLevel) || DebugLevel.WARNING);
 
 const prisma = new PrismaClient();
 
 const client = new Client({
-    intents: ['Guilds', 'GuildMessages', 'DirectMessages'],
+    intents: ['Guilds', 'GuildMessages', 'DirectMessages', 'GuildMembers'],
 });
 
 client.once('ready', async () => {
@@ -65,11 +67,13 @@ client.once('ready', async () => {
     for (const syncedGuild of syncedGuilds) {
         if (client.user?.id && syncedGuild) {
             await deployCommands({ guildId: syncedGuild.id });
-            await initSettings(client.user.id, syncedGuild);
+            await setupChannels(syncedGuild);
+            await setupRoles(syncedGuild);
+            await cleanup(syncedGuild);
         }
     }
 
-    DebugUtils.debug('[Startup] Successfully refreshed commands for joined guilds');
+    DebugUtils.debug('[Startup] Successfully synced guilds with db');
 
     console.log('Bot has started!'); // Unconditional log
 });
@@ -84,7 +88,9 @@ client.on('guildCreate', async (guild) => {
 
             if (client.user?.id && clientGuild) {
                 await deployCommands({ guildId: createdGuild.guildDiscordId });
-                await initSettings(client.user.id, clientGuild);
+                await setupChannels(clientGuild);
+                await setupRoles(clientGuild);
+                await cleanup(clientGuild);
             }
         }
     } catch (e) {
