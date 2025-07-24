@@ -6,12 +6,18 @@ export async function botModGuard(interaction: CommandInteraction, callback: (gu
 
     const guild = await prisma.guild.findFirst({
         where: {
-            guildId: interaction.guildId!,
+            guildDiscordId: interaction.guildId!,
         },
     });
 
     if (!guild?.botCommandsChannel || !guild.queueChannel || !guild.botModRole || !guild.registeredRole || !guild.queueRole) {
-        await interaction.reply({ content: 'Bot is not setup. Run /settings and fill out the values', flags: MessageFlags.Ephemeral });
+        const settingsChannelId = interaction.guild?.channels.cache.find((c) => c.name === 'bbq-settings')?.id;
+        const settingsChannelMention = settingsChannelId ? channelMention(settingsChannelId) : 'The settings channel';
+
+        await interaction.reply({
+            content: `Bot is not setup. Fill out the values in ${settingsChannelMention}`,
+            flags: MessageFlags.Ephemeral,
+        });
         return;
     }
 

@@ -69,9 +69,9 @@ export async function initSettings(clientUserId: string, guild: Guild) {
 
         commandsChannelSelectCollector?.on('collect', async (i) => {
             const updatedGuild = await prisma.guild.upsert({
-                where: { guildId: guild.id },
+                where: { guildDiscordId: guild.id },
                 create: {
-                    guildId: guild.id,
+                    guildDiscordId: guild.id,
                     botCommandsChannel: i.values[0],
                 },
                 update: { botCommandsChannel: i.values[0] },
@@ -81,9 +81,9 @@ export async function initSettings(clientUserId: string, guild: Guild) {
 
         queueChannelSelectCollector?.on('collect', async (i) => {
             const updatedGuild = await prisma.guild.upsert({
-                where: { guildId: guild.id },
+                where: { guildDiscordId: guild.id },
                 create: {
-                    guildId: guild.id,
+                    guildDiscordId: guild.id,
                     queueChannel: i.values[0],
                 },
                 update: { queueChannel: i.values[0] },
@@ -93,9 +93,9 @@ export async function initSettings(clientUserId: string, guild: Guild) {
 
         botModRoleSelectCollector?.on('collect', async (i) => {
             const updatedGuild = await prisma.guild.upsert({
-                where: { guildId: guild.id },
+                where: { guildDiscordId: guild.id },
                 create: {
-                    guildId: guild.id,
+                    guildDiscordId: guild.id,
                     botModRole: i.values[0],
                 },
                 update: { botModRole: i.values[0] },
@@ -105,9 +105,9 @@ export async function initSettings(clientUserId: string, guild: Guild) {
 
         registeredRoleSelectCollector?.on('collect', async (i) => {
             const updatedGuild = await prisma.guild.upsert({
-                where: { guildId: guild.id },
+                where: { guildDiscordId: guild.id },
                 create: {
-                    guildId: guild.id,
+                    guildDiscordId: guild.id,
                     registeredRole: i.values[0],
                 },
                 update: { registeredRole: i.values[0] },
@@ -117,9 +117,9 @@ export async function initSettings(clientUserId: string, guild: Guild) {
 
         queueRoleSelectCollector?.on('collect', async (i) => {
             const updatedGuild = await prisma.guild.upsert({
-                where: { guildId: guild.id },
+                where: { guildDiscordId: guild.id },
                 create: {
-                    guildId: guild.id,
+                    guildDiscordId: guild.id,
                     queueRole: i.values[0],
                 },
                 update: { queueRole: i.values[0] },

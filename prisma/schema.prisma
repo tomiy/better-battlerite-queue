@@ -13,7 +13,7 @@ datasource db {
 
 model Guild {
     id                 Int     @id @default(autoincrement())
-    guildId            String  @unique
+    guildDiscordId     String  @unique
     botCommandsChannel String?
     queueChannel       String?
     botModRole         String?
@@ -23,9 +23,17 @@ model Guild {
 }
 
 model User {
-    id         Int    @id @default(autoincrement())
-    userId     String @unique
-    guild      Guild  @relation(fields: [guildId], references: [guildId])
-    guildId    String
-    inGameName String
+    id            Int    @id @default(autoincrement())
+    userDiscordId String @unique
+    guild         Guild  @relation(fields: [guildId], references: [id])
+    guildId       Int
+    inGameName    String
+
+    queue Queue?
+}
+
+model Queue {
+    id     Int  @id @default(autoincrement())
+    user   User @relation(fields: [userId], references: [id])
+    userId Int  @unique
 }

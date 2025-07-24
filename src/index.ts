@@ -1,4 +1,4 @@
-import { Client } from 'discord.js';
+import { Client, Guild } from 'discord.js';
 import { PrismaClient } from '../.prisma';
 import { commands } from './commands';
 import { config } from './config';
@@ -16,18 +16,56 @@ const client = new Client({
 
 client.once('ready', async () => {
     DebugUtils.debug('[Startup] Refreshing commands for joined guilds');
-    const guilds = await prisma.guild.findMany();
+    const dbGuilds = await prisma.guild.findMany();
 
-    if (!guilds.length) {
-        DebugUtils.debug('[Startup] No guilds in db');
+    DebugUtils.debug('[Startup] Syncing guilds with db...');
+    const syncedGuilds: Guild[] = [];
+
+    // Delete guilds in db but not in client
+    for (const dbGuild of dbGuilds) {
+        const clientGuild = client.guilds.cache.get(dbGuild.guildDiscordId);
+
+        if (!clientGuild) {
+            try {
+                const deletedGuild = await prisma.guild.delete({ where: { guildDiscordId: dbGuild.guildDiscordId } });
+
+                if (deletedGuild) {
+                    DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${deletedGuild.guildDiscordId}`);
+                }
+            } catch (e) {
+                DebugUtils.error(`[DB Guild] Error deleting guild: ${e}`);
+            }
+
+            return;
+        }
+
+        syncedGuilds.push(clientGuild);
     }
 
-    for (const guild of guilds) {
-        await deployCommands({ guildId: guild.guildId });
+    // Create guilds in client but not in db
+    for (const [clientGuildId, clientGuild] of client.guilds.cache) {
+        const syncedGuild = syncedGuilds.find((syncedGuild) => syncedGuild.id === clientGuildId);
+        const dbGuild = dbGuilds.find((dbGuild) => dbGuild.guildDiscordId === clientGuildId);
 
-        const clientGuild = client.guilds.cache.get(guild.guildId);
-        if (client.user?.id && clientGuild) {
-            await initSettings(client.user.id, clientGuild);
+        if (!syncedGuild && !dbGuild) {
+            try {
+                const createdGuild = await prisma.guild.create({ data: { guildDiscordId: clientGuildId } });
+
+                if (createdGuild) {
+                    DebugUtils.debug(`[DB Guild] Created guild with guild id ${createdGuild.guildDiscordId}`);
+                    syncedGuilds.push(clientGuild);
+                }
+            } catch (e) {
+                DebugUtils.error(`[DB Guild] Error creating guild: ${e}`);
+            }
+        }
+    }
+
+    // init bot on synced guilds
+    for (const syncedGuild of syncedGuilds) {
+        if (client.user?.id && syncedGuild) {
+            await deployCommands({ guildId: syncedGuild.id });
+            await initSettings(client.user.id, syncedGuild);
         }
     }
 
@@ -38,11 +76,16 @@ client.once('ready', async () => {
 
 client.on('guildCreate', async (guild) => {
     try {
-        const createdGuild = await prisma.guild.create({ data: { guildId: guild.id } });
+        const createdGuild = await prisma.guild.create({ data: { guildDiscordId: guild.id } });
 
         if (createdGuild) {
-            DebugUtils.debug(`[DB Guild] Created guild with guild id ${createdGuild.guildId}`);
-            deployCommands({ guildId: createdGuild.guildId });
+            DebugUtils.debug(`[DB Guild] Created guild with guild id ${createdGuild.guildDiscordId}`);
+            const clientGuild = client.guilds.cache.get(createdGuild.guildDiscordId);
+
+            if (client.user?.id && clientGuild) {
+                await deployCommands({ guildId: createdGuild.guildDiscordId });
+                await initSettings(client.user.id, clientGuild);
+            }
         }
     } catch (e) {
         DebugUtils.error(`[DB Guild] Error creating guild: ${e}`);
@@ -51,10 +94,10 @@ client.on('guildCreate', async (guild) => {
 
 client.on('guildDelete', async (guild) => {
     try {
-        const deletedGuild = await prisma.guild.delete({ where: { guildId: guild.id } });
+        const deletedGuild = await prisma.guild.delete({ where: { guildDiscordId: guild.id } });
 
         if (deletedGuild) {
-            DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${deletedGuild.guildId}`);
+            DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${deletedGuild.guildDiscordId}`);
         }
     } catch (e) {
         DebugUtils.error(`[DB Guild] Error deleting guild: ${e}`);

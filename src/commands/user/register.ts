@@ -9,7 +9,7 @@ export async function execute(interaction: CommandInteraction) {
     botCommandsChannel(interaction, async (guild) => {
         const prisma = new PrismaClient();
 
-        const user = await prisma.user.findFirst({ where: { userId: interaction.user.id, guildId: guild.guildId } });
+        const user = await prisma.user.findFirst({ where: { userDiscordId: interaction.user.id, guildId: guild.id } });
 
         if (user) {
             await interaction.reply({ content: 'You are already registered!', flags: MessageFlags.Ephemeral });
@@ -33,8 +33,8 @@ export async function execute(interaction: CommandInteraction) {
 
                 const user = await prisma.user.create({
                     data: {
-                        userId: interaction.user.id,
-                        guildId: guild.guildId,
+                        userDiscordId: interaction.user.id,
+                        guildId: guild.id,
                         inGameName: inGameName,
                     },
                 });

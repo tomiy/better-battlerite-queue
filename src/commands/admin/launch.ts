@@ -26,7 +26,7 @@ export async function execute(interaction: CommandInteraction) {
             const buttonCollector = queueMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
             buttonCollector?.on('collect', async (i) => {
-                const user = await prisma.user.findFirst({ where: { userId: i.user.id, guildId: i.guildId } });
+                const user = await prisma.user.findFirst({ where: { userDiscordId: i.user.id, guildId: guild.id } });
                 switch (i.customId) {
                     case 'queueButton':
                         if (!user) {
