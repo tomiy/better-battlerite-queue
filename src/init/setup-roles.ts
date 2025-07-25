@@ -1,6 +1,6 @@
 import { Guild } from 'discord.js';
 import { PrismaClient } from '../../.prisma';
-import { DebugUtils } from '../debug.utils';
+import { DebugUtils } from '../debug-utils';
 
 const registeredRoleName = 'BBQ Registered';
 const queueRoleName = 'BBQ In Queue';

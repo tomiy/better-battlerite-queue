@@ -1,10 +1,6 @@
-import * as launch from './admin/launch';
-import * as ping from './admin/ping';
+import { launch } from './admin/launch.command';
+import { ping } from './admin/ping.command';
+import { Command } from './command';
+import { register } from './user/register.command';
 
-import * as register from './user/register';
-
-export const commands = {
-    ping,
-    register,
-    launch,
-};
+export const commands: Command[] = [ping, register, launch];

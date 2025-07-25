@@ -1,6 +1,6 @@
 import { CategoryChannel, ChannelType, Guild, TextChannel } from 'discord.js';
 import { PrismaClient } from '../../.prisma';
-import { DebugUtils } from '../debug.utils';
+import { DebugUtils } from '../debug-utils';
 
 const categoryChannelName = 'Better Battlerite Queue';
 const botCommandsChannelName = 'bbq-bot-commands';
