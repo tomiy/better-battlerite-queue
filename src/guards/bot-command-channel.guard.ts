@@ -1,8 +1,8 @@
 import { CommandInteraction, MessageFlags, channelMention } from 'discord.js';
-import { Guild } from '../../.prisma';
+import { Guild as dbGuild } from '../../.prisma';
 import { GuardFunction } from './guard';
 
-export const botCommandsChannel: GuardFunction = async (interaction: CommandInteraction, guild: Guild) => {
+export const botCommandsChannel: GuardFunction = async (interaction: CommandInteraction, guild: dbGuild) => {
     if (interaction.channelId === guild?.botCommandsChannel) {
         return true;
     }

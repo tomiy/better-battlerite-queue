@@ -11,12 +11,28 @@ export async function cleanup(guild: Guild) {
         const dbGuild = await prisma.guild.findFirstOrThrow({ where: { guildDiscordId: guild.id } });
 
         const queueRole = dbGuild.queueRole;
+        const registeredRole = dbGuild.registeredRole;
 
         if (queueRole === null) {
             throw new Error('[Cleanup] No queue role found, check bot logs');
         }
 
+        if (registeredRole === null) {
+            throw new Error('[Cleanup] No registered role found, check bot logs');
+        }
+
         const members = await guild.members.fetch();
+
+        const dbUsers = await prisma.user.findMany({ where: { guild: { guildDiscordId: guild.id } } });
+
+        for (const dbUser of dbUsers) {
+            const matchingMember = members.find((m) => m.id === dbUser.userDiscordId);
+
+            if (matchingMember && !matchingMember.roles.cache.has(registeredRole)) {
+                matchingMember.roles.add(registeredRole);
+            }
+        }
+
         const queuedMembers = members.filter((m) => m.roles.cache.has(queueRole));
 
         if (queuedMembers.size) {

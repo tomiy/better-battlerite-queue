@@ -6,6 +6,7 @@ import { config } from './config';
 import { createGuild, deleteGuild } from './db/guild-functions';
 import { DebugLevel, DebugUtils } from './debug-utils';
 import { initGuild } from './init';
+import { syncGuilds } from './init/sync-guilds';
 
 DebugUtils.setDebugLevel((config.DEBUG_LEVEL || DebugLevel.WARNING) as DebugLevel);
 
@@ -19,41 +20,16 @@ client.once(Events.ClientReady, async () => {
     DebugUtils.debug('[Startup] Syncing guilds with db...');
     const dbGuilds = await prisma.guild.findMany();
 
-    const syncedGuilds: Guild[] = [];
+    const syncedGuilds: Guild[] = await syncGuilds(client, dbGuilds);
 
-    // Delete guilds in db but not in client
-    for (const dbGuild of dbGuilds) {
-        const clientGuild = client.guilds.cache.get(dbGuild.guildDiscordId);
-
-        if (!clientGuild) {
-            await deleteGuild(dbGuild.guildDiscordId);
-            return;
-        }
-
-        syncedGuilds.push(clientGuild);
-    }
-
-    // Create guilds in client but not in db
-    for (const [clientGuildId, clientGuild] of client.guilds.cache) {
-        const syncedGuild = syncedGuilds.find((syncedGuild) => syncedGuild.id === clientGuildId);
-        const dbGuild = dbGuilds.find((dbGuild) => dbGuild.guildDiscordId === clientGuildId);
-
-        if (!syncedGuild && !dbGuild) {
-            await createGuild(clientGuildId, () => {
-                syncedGuilds.push(clientGuild);
-            });
-        }
-    }
-
-    // init bot on synced guilds
     for (const syncedGuild of syncedGuilds) {
         await initGuild(client, syncedGuild);
     }
 
+    DebugUtils.debug('[Startup] Successfully synced guilds with db');
+
     // Purge db queue once for all guilds
     await prisma.queue.deleteMany();
-
-    DebugUtils.debug('[Startup] Successfully synced guilds with db');
 
     console.log('Bot has started!'); // Unconditional log
 });

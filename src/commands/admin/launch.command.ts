@@ -23,7 +23,7 @@ async function execute(interaction: CommandInteraction, dbGuild: Guild) {
         const leaveButton = new ButtonBuilder().setCustomId('leaveButton').setLabel('Leave').setStyle(ButtonStyle.Danger);
         const queueButtonsRow = new ActionRowBuilder<ButtonBuilder>().addComponents(queueButton).addComponents(leaveButton);
 
-        const queueMessage = await queueChannel.send({ content: 'Good luck!', components: [queueButtonsRow] });
+        const queueMessage = await queueChannel.send({ components: [queueButtonsRow] });
 
         const buttonCollector = queueMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
 
