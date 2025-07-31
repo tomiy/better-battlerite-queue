@@ -72,6 +72,6 @@ export async function setupRoles(guild: Guild) {
 
         DebugUtils.debug(`[Setup roles] Successfully synced roles for guild ${guild.id}`);
     } catch (e) {
-        DebugUtils.error(`[Setup] Error: ${e}`);
+        DebugUtils.error(`[Setup roles] Error: ${e}`);
     }
 }

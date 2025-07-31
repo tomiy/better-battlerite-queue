@@ -1,5 +1,5 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, channelMention, CommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder, TextChannel } from 'discord.js';
-import { Guild, PrismaClient } from '../../../.prisma';
+import { Guild as dbGuild, PrismaClient } from '../../../.prisma';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botModGuard } from '../../guards/bot-mod.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
@@ -7,11 +7,28 @@ import { Command } from '../command';
 
 const data = new SlashCommandBuilder().setName('launch').setDescription('Starts the queue');
 
-async function execute(interaction: CommandInteraction, dbGuild: Guild) {
+async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const prisma = new PrismaClient();
-    const queueChannel = interaction.client.channels.cache.get(dbGuild.queueChannel!);
 
-    if (!queueChannel) {
+    const botCommandsChannelId = dbGuild.botCommandsChannel;
+    const queueChannelId = dbGuild.queueChannel;
+    const queueRoleId = dbGuild.queueRole;
+
+    if (botCommandsChannelId === null) {
+        throw new Error('[Launch command] No bot commands channel found, check bot logs');
+    }
+
+    if (queueChannelId === null) {
+        throw new Error('[Launch command] No queue channel found, check bot logs');
+    }
+
+    if (queueRoleId === null) {
+        throw new Error('[Launch command] No queue role found, check bot logs');
+    }
+
+    const queueChannel = interaction.client.channels.cache.get(queueChannelId);
+
+    if (!queueChannelId) {
         interaction.reply({ content: 'Queue channel does not exist, check settings', flags: MessageFlags.Ephemeral });
         return;
     }
@@ -29,21 +46,36 @@ async function execute(interaction: CommandInteraction, dbGuild: Guild) {
 
         buttonCollector?.on('collect', async (i) => {
             const user = await prisma.user.findFirst({ where: { userDiscordId: i.user.id, guildId: dbGuild.id } });
+
+            if (!user) {
+                await i.reply({ content: `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`, flags: MessageFlags.Ephemeral });
+                return;
+            }
+
+            const queuedUser = await prisma.queue.findFirst({ where: { userId: user.id } });
+
             switch (i.customId) {
                 case 'queueButton':
-                    if (!user) {
-                        await i.reply({ content: `You are not registered! Use /register in ${channelMention(dbGuild.botCommandsChannel!)}`, flags: MessageFlags.Ephemeral });
+                    if (queuedUser) {
+                        await i.reply({ content: 'You are already in queue!', flags: MessageFlags.Ephemeral });
                         return;
                     }
 
-                    // TODO: push user id to queue table
-                    // TODO: check if match can be created
-                    await i.member.roles.add(dbGuild.queueRole!);
+                    await prisma.queue.create({ data: { userId: user.id } });
+                    await i.member.roles.add(queueRoleId);
                     await i.reply({ content: 'Queue joined!', flags: MessageFlags.Ephemeral });
+
+                    // TODO: check if match can be created
+
                     break;
                 case 'leaveButton':
-                    // TODO: remove user id from queue table
-                    await i.member.roles.remove(dbGuild.queueRole!);
+                    if (!queuedUser) {
+                        await i.reply({ content: 'You are not in queue!', flags: MessageFlags.Ephemeral });
+                        return;
+                    }
+
+                    await prisma.queue.delete({ where: { userId: user.id } });
+                    await i.member.roles.remove(queueRoleId);
                     await i.reply({ content: 'Queue left!', flags: MessageFlags.Ephemeral });
                     break;
             }

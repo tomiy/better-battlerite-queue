@@ -1,12 +1,12 @@
-import { Guild } from 'discord.js';
+import { Guild, GuildMember } from 'discord.js';
 import { PrismaClient } from '../../.prisma';
 import { DebugUtils } from '../debug-utils';
 
-export async function cleanup(guild: Guild) {
+export async function syncUsers(guild: Guild) {
     const prisma = new PrismaClient();
 
     try {
-        DebugUtils.debug(`[Cleanup] Cleaning up for guild ${guild.id}`);
+        DebugUtils.debug(`[Sync users] Syncing users for guild ${guild.id}`);
 
         const dbGuild = await prisma.guild.findFirstOrThrow({ where: { guildDiscordId: guild.id } });
 
@@ -14,15 +14,16 @@ export async function cleanup(guild: Guild) {
         const registeredRole = dbGuild.registeredRole;
 
         if (queueRole === null) {
-            throw new Error('[Cleanup] No queue role found, check bot logs');
+            throw new Error('[Sync users] No queue role found, check bot logs');
         }
 
         if (registeredRole === null) {
-            throw new Error('[Cleanup] No registered role found, check bot logs');
+            throw new Error('[Sync users] No registered role found, check bot logs');
         }
 
         const members = await guild.members.fetch();
 
+        const syncedMembers: GuildMember[] = [];
         const dbUsers = await prisma.user.findMany({ where: { guild: { guildDiscordId: guild.id } } });
 
         for (const dbUser of dbUsers) {
@@ -30,21 +31,32 @@ export async function cleanup(guild: Guild) {
 
             if (matchingMember && !matchingMember.roles.cache.has(registeredRole)) {
                 matchingMember.roles.add(registeredRole);
+
+                syncedMembers.push(matchingMember);
+            }
+        }
+
+        for (const [clientUserId, clientUser] of members) {
+            const syncedMember = syncedMembers.find((syncedMember) => syncedMember.id === clientUserId);
+            const dbUser = dbUsers.find((dbUser) => dbUser.userDiscordId === clientUserId);
+
+            if (!syncedMember && !dbUser) {
+                clientUser.roles.remove(registeredRole);
             }
         }
 
         const queuedMembers = members.filter((m) => m.roles.cache.has(queueRole));
 
         if (queuedMembers.size) {
-            DebugUtils.debug('[Cleanup] Purging old queued users...');
+            DebugUtils.debug('[Sync users] Purging old queued users...');
 
             queuedMembers.forEach(async (m) => await m.roles.remove(queueRole));
 
-            DebugUtils.debug('[Cleanup] Purged old queued users');
+            DebugUtils.debug('[Sync users] Purged old queued users');
         }
 
-        DebugUtils.debug(`[Cleanup] Successfully cleaned up for guild ${guild.id}`);
+        DebugUtils.debug(`[Sync users] Successfully synced users for guild ${guild.id}`);
     } catch (e) {
-        DebugUtils.error(`[Cleanup] Error: ${e}`);
+        DebugUtils.error(`[Sync users] Error: ${e}`);
     }
 }
