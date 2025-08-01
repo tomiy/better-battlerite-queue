@@ -1,15 +1,15 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, channelMention, CommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder, TextChannel } from 'discord.js';
-import { Guild as dbGuild, PrismaClient } from '../../../.prisma';
+import { Guild as dbGuild } from '../../../.prisma';
+import { prisma } from '../../config';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botModGuard } from '../../guards/bot-mod.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
+import { tryMatchCreation } from '../../match/try-match-creation';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder().setName('launch').setDescription('Starts the queue');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const prisma = new PrismaClient();
-
     const botCommandsChannelId = dbGuild.botCommandsChannel;
     const queueChannelId = dbGuild.queueChannel;
     const queueRoleId = dbGuild.queueRole;
@@ -65,7 +65,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                     await i.member.roles.add(queueRoleId);
                     await i.reply({ content: 'Queue joined!', flags: MessageFlags.Ephemeral });
 
-                    // TODO: check if match can be created
+                    await tryMatchCreation(dbGuild.id);
 
                     break;
                 case 'leaveButton':

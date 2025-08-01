@@ -1,5 +1,6 @@
 import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { Guild, PrismaClient } from '../../.prisma';
+import { Guild } from '../../.prisma';
+import { prisma } from '../config';
 import { GuardFunction } from '../guards/guard';
 
 export type Command = {
@@ -9,8 +10,6 @@ export type Command = {
 };
 
 export async function executeCommand(command: Command, interaction: CommandInteraction) {
-    const prisma = new PrismaClient();
-
     const dbGuild = await prisma.guild.findFirstOrThrow({ where: { guildDiscordId: interaction.guildId! } });
 
     for (const guard of command.guards) {

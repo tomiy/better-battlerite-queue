@@ -1,10 +1,8 @@
 import { Guild, GuildMember } from 'discord.js';
-import { PrismaClient } from '../../.prisma';
+import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 
 export async function syncUsers(guild: Guild) {
-    const prisma = new PrismaClient();
-
     try {
         DebugUtils.debug(`[Sync users] Syncing users for guild ${guild.id}`);
 

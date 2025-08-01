@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { PrismaClient } from '../.prisma';
 
 dotenv.config();
 
@@ -13,3 +14,5 @@ export const config = {
     DISCORD_CLIENT_ID,
     DEBUG_LEVEL,
 };
+
+export const prisma = new PrismaClient();

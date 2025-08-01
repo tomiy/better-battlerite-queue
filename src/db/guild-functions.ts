@@ -1,7 +1,6 @@
-import { PrismaClient, Guild as dbGuild } from '../../.prisma';
+import { Guild as dbGuild } from '../../.prisma';
+import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-
-const prisma = new PrismaClient();
 
 export async function createGuild(guildId: string, callback?: (guild: dbGuild) => void) {
     try {

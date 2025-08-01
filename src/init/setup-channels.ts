@@ -1,5 +1,5 @@
 import { CategoryChannel, ChannelType, Guild, TextChannel } from 'discord.js';
-import { PrismaClient } from '../../.prisma';
+import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 
 const categoryChannelName = 'Better Battlerite Queue';
@@ -7,8 +7,6 @@ const botCommandsChannelName = 'bbq-bot-commands';
 const queueChannelName = 'bbq-queue';
 
 export async function setupChannels(guild: Guild) {
-    const prisma = new PrismaClient();
-
     try {
         DebugUtils.debug(`[Setup channels] Syncing channels for guild ${guild.id}`);
 

@@ -28,12 +28,14 @@ model User {
     guild         Guild  @relation(fields: [guildId], references: [id])
     guildId       Int
     inGameName    String
+    elo           Int    @default(1000)
 
     queue Queue?
 }
 
 model Queue {
-    id     Int  @id @default(autoincrement())
-    user   User @relation(fields: [userId], references: [id])
-    userId Int  @unique
+    id        Int      @id @default(autoincrement())
+    user      User     @relation(fields: [userId], references: [id])
+    userId    Int      @unique
+    queueTime DateTime @default(now())
 }

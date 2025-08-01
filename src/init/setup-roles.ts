@@ -1,5 +1,5 @@
 import { Guild } from 'discord.js';
-import { PrismaClient } from '../../.prisma';
+import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 
 const registeredRoleName = 'BBQ Registered';
@@ -7,8 +7,6 @@ const queueRoleName = 'BBQ In Queue';
 const botModRoleName = 'BBQ Bot Moderator';
 
 export async function setupRoles(guild: Guild) {
-    const prisma = new PrismaClient();
-
     try {
         DebugUtils.debug(`[Setup roles] Syncing roles for guild ${guild.id}`);
 

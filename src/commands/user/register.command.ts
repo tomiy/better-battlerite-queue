@@ -1,5 +1,6 @@
 import { ActionRowBuilder, CommandInteraction, GuildMember, MessageFlags, ModalActionRowComponentBuilder, ModalBuilder, SlashCommandBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
-import { Guild, PrismaClient } from '../../../.prisma';
+import { Guild } from '../../../.prisma';
+import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
@@ -8,8 +9,6 @@ import { Command } from '../command';
 const data = new SlashCommandBuilder().setName('register').setDescription('Register');
 
 async function execute(interaction: CommandInteraction, dbGuild: Guild) {
-    const prisma = new PrismaClient();
-
     const user = await prisma.user.findFirst({ where: { userDiscordId: interaction.user.id, guildId: dbGuild.id } });
 
     if (user) {

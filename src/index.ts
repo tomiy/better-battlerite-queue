@@ -1,16 +1,13 @@
 import { Client, Events, Guild } from 'discord.js';
-import { PrismaClient } from '../.prisma';
 import { commands } from './commands';
 import { executeCommand } from './commands/command';
-import { config } from './config';
+import { config, prisma } from './config';
 import { createGuild, deleteGuild } from './db/guild-functions';
 import { DebugLevel, DebugUtils } from './debug-utils';
 import { initGuild } from './init';
 import { syncGuilds } from './init/sync-guilds';
 
 DebugUtils.setDebugLevel((config.DEBUG_LEVEL || DebugLevel.WARNING) as DebugLevel);
-
-const prisma = new PrismaClient();
 
 const client = new Client({
     intents: ['Guilds', 'GuildMessages', 'DirectMessages', 'GuildMembers'],
