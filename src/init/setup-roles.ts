@@ -10,12 +10,18 @@ export async function setupRoles(guild: Guild) {
     try {
         DebugUtils.debug(`[Setup roles] Syncing roles for guild ${guild.id}`);
 
-        let registeredRole = guild.roles.cache.find((r) => r.name === registeredRoleName);
+        let registeredRole = guild.roles.cache.find(
+            (r) => r.name === registeredRoleName,
+        );
         let queueRole = guild.roles.cache.find((r) => r.name === queueRoleName);
-        let botModRole = guild.roles.cache.find((r) => r.name === botModRoleName);
+        let botModRole = guild.roles.cache.find(
+            (r) => r.name === botModRoleName,
+        );
 
         if (!registeredRole) {
-            DebugUtils.debug(`[Setup roles] Creating role ${registeredRoleName}`);
+            DebugUtils.debug(
+                `[Setup roles] Creating role ${registeredRoleName}`,
+            );
 
             registeredRole = await guild.roles.create({
                 name: registeredRoleName,
@@ -23,7 +29,9 @@ export async function setupRoles(guild: Guild) {
             });
 
             if (!registeredRole) {
-                DebugUtils.error('[Setup roles] Could not create registered role');
+                DebugUtils.error(
+                    '[Setup roles] Could not create registered role',
+                );
                 return;
             }
         }
@@ -54,7 +62,9 @@ export async function setupRoles(guild: Guild) {
             });
 
             if (!botModRole) {
-                DebugUtils.error('[Setup roles] Could not create bot moderator role');
+                DebugUtils.error(
+                    '[Setup roles] Could not create bot moderator role',
+                );
                 return;
             }
         }
@@ -68,7 +78,9 @@ export async function setupRoles(guild: Guild) {
             },
         });
 
-        DebugUtils.debug(`[Setup roles] Successfully synced roles for guild ${guild.id}`);
+        DebugUtils.debug(
+            `[Setup roles] Successfully synced roles for guild ${guild.id}`,
+        );
     } catch (e) {
         DebugUtils.error(`[Setup roles] Error: ${e}`);
     }

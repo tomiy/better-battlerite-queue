@@ -2,12 +2,19 @@ import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 
-export async function createGuild(guildId: string, callback?: (guild: dbGuild) => void) {
+export async function createGuild(
+    guildId: string,
+    callback?: (guild: dbGuild) => void,
+) {
     try {
-        const createdGuild = await prisma.guild.create({ data: { guildDiscordId: guildId } });
+        const createdGuild = await prisma.guild.create({
+            data: { guildDiscordId: guildId },
+        });
 
         if (createdGuild) {
-            DebugUtils.debug(`[DB Guild] Created guild with guild id ${createdGuild.guildDiscordId}`);
+            DebugUtils.debug(
+                `[DB Guild] Created guild with guild id ${createdGuild.guildDiscordId}`,
+            );
             if (callback) {
                 callback(createdGuild);
             }
@@ -17,12 +24,19 @@ export async function createGuild(guildId: string, callback?: (guild: dbGuild) =
     }
 }
 
-export async function deleteGuild(guildId: string, callback?: (guild: dbGuild) => void) {
+export async function deleteGuild(
+    guildId: string,
+    callback?: (guild: dbGuild) => void,
+) {
     try {
-        const deletedGuild = await prisma.guild.delete({ where: { guildDiscordId: guildId } });
+        const deletedGuild = await prisma.guild.delete({
+            where: { guildDiscordId: guildId },
+        });
 
         if (deletedGuild) {
-            DebugUtils.debug(`[DB Guild] Deleted guild with guild id ${deletedGuild.guildDiscordId}`);
+            DebugUtils.debug(
+                `[DB Guild] Deleted guild with guild id ${deletedGuild.guildDiscordId}`,
+            );
 
             if (callback) {
                 callback(deletedGuild);

@@ -17,8 +17,12 @@ export async function syncGuilds(client: Client, dbGuilds: dbGuild[]) {
     }
 
     for (const [clientGuildId, clientGuild] of client.guilds.cache) {
-        const syncedGuild = syncedGuilds.find((syncedGuild) => syncedGuild.id === clientGuildId);
-        const dbGuild = dbGuilds.find((dbGuild) => dbGuild.guildDiscordId === clientGuildId);
+        const syncedGuild = syncedGuilds.find(
+            (syncedGuild) => syncedGuild.id === clientGuildId,
+        );
+        const dbGuild = dbGuilds.find(
+            (dbGuild) => dbGuild.guildDiscordId === clientGuildId,
+        );
 
         if (!syncedGuild && !dbGuild) {
             await createGuild(clientGuildId, () => {

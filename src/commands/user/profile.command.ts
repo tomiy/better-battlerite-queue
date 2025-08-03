@@ -1,7 +1,6 @@
 import {
     ActionRowBuilder,
     CommandInteraction,
-    GuildMember,
     MessageFlags,
     ModalActionRowComponentBuilder,
     ModalBuilder,
@@ -17,40 +16,41 @@ import { botSetup } from '../../guards/bot-setup.guard';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder()
-    .setName('register')
-    .setDescription('Register');
+    .setName('profile')
+    .setDescription('Profile');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const user = await prisma.user.findFirst({
         where: { userDiscordId: interaction.user.id, guildId: dbGuild.id },
     });
 
-    if (user) {
+    if (!user) {
         await interaction.reply({
-            content: 'You are already registered!',
+            content: 'You are not registered! use /register',
             flags: MessageFlags.Ephemeral,
         });
         return;
     }
 
-    const registerModal = new ModalBuilder()
-        .setCustomId('registerModal')
-        .setTitle('Registration form')
+    const profileModal = new ModalBuilder()
+        .setCustomId('profileModal')
+        .setTitle('Profile form')
         .addComponents();
 
     const inGameNameInput = new TextInputBuilder()
         .setCustomId('inGameNameInput')
         .setLabel('Battlerite username')
         .setStyle(TextInputStyle.Short)
-        .setRequired(true);
+        .setRequired(true)
+        .setValue(user.inGameName);
     const inGameNameRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             inGameNameInput,
         );
 
-    registerModal.addComponents(inGameNameRow);
+    profileModal.addComponents(inGameNameRow);
 
-    await interaction.showModal(registerModal);
+    await interaction.showModal(profileModal);
 
     try {
         const submitted = await interaction.awaitModalSubmit({
@@ -62,30 +62,29 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const inGameName =
                 submitted.fields.getTextInputValue('inGameNameInput');
 
-            const user = await prisma.user.create({
-                data: {
+            const user = await prisma.user.update({
+                where: {
                     userDiscordId: interaction.user.id,
                     guildId: dbGuild.id,
+                },
+                data: {
                     inGameName: inGameName,
                 },
             });
 
             if (user) {
-                await (interaction.member as GuildMember)?.roles.add(
-                    dbGuild.registeredRole!,
-                );
                 await submitted.reply({
-                    content: `You are now registered!`,
+                    content: `Profile updated!`,
                     flags: MessageFlags.Ephemeral,
                 });
             }
         }
     } catch (e) {
-        DebugUtils.error(`[Register] Timeout: ${e}`);
+        DebugUtils.error(`[Profile] Timeout: ${e}`);
     }
 }
 
-export const register: Command = {
+export const profile: Command = {
     data: data,
     execute: execute,
     guards: [botSetup, botCommandsChannel],

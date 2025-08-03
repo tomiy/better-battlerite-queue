@@ -1,4 +1,14 @@
-import { ActionRowBuilder, ButtonBuilder, ButtonStyle, channelMention, CommandInteraction, ComponentType, MessageFlags, SlashCommandBuilder, TextChannel } from 'discord.js';
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    channelMention,
+    CommandInteraction,
+    ComponentType,
+    MessageFlags,
+    SlashCommandBuilder,
+    TextChannel,
+} from 'discord.js';
 import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
@@ -7,7 +17,9 @@ import { botSetup } from '../../guards/bot-setup.guard';
 import { tryMatchCreation } from '../../match/try-match-creation';
 import { Command } from '../command';
 
-const data = new SlashCommandBuilder().setName('launch').setDescription('Starts the queue');
+const data = new SlashCommandBuilder()
+    .setName('launch')
+    .setDescription('Starts the queue');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const botCommandsChannelId = dbGuild.botCommandsChannel;
@@ -15,11 +27,15 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const queueRoleId = dbGuild.queueRole;
 
     if (botCommandsChannelId === null) {
-        throw new Error('[Launch command] No bot commands channel found, check bot logs');
+        throw new Error(
+            '[Launch command] No bot commands channel found, check bot logs',
+        );
     }
 
     if (queueChannelId === null) {
-        throw new Error('[Launch command] No queue channel found, check bot logs');
+        throw new Error(
+            '[Launch command] No queue channel found, check bot logs',
+        );
     }
 
     if (queueRoleId === null) {
@@ -29,61 +45,102 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const queueChannel = interaction.client.channels.cache.get(queueChannelId);
 
     if (!queueChannelId) {
-        interaction.reply({ content: 'Queue channel does not exist, check settings', flags: MessageFlags.Ephemeral });
+        interaction.reply({
+            content: 'Queue channel does not exist, check settings',
+            flags: MessageFlags.Ephemeral,
+        });
         return;
     }
 
     if (queueChannel instanceof TextChannel) {
         await queueChannel.bulkDelete(100);
 
-        const queueButton = new ButtonBuilder().setCustomId('queueButton').setLabel('Queue').setStyle(ButtonStyle.Primary);
-        const leaveButton = new ButtonBuilder().setCustomId('leaveButton').setLabel('Leave').setStyle(ButtonStyle.Danger);
-        const queueButtonsRow = new ActionRowBuilder<ButtonBuilder>().addComponents(queueButton).addComponents(leaveButton);
+        const queueButton = new ButtonBuilder()
+            .setCustomId('queueButton')
+            .setLabel('Queue')
+            .setStyle(ButtonStyle.Primary);
+        const leaveButton = new ButtonBuilder()
+            .setCustomId('leaveButton')
+            .setLabel('Leave')
+            .setStyle(ButtonStyle.Danger);
+        const queueButtonsRow = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(queueButton)
+            .addComponents(leaveButton);
 
-        const queueMessage = await queueChannel.send({ components: [queueButtonsRow] });
+        const queueMessage = await queueChannel.send({
+            components: [queueButtonsRow],
+        });
 
-        const buttonCollector = queueMessage.createMessageComponentCollector({ componentType: ComponentType.Button });
+        const buttonCollector = queueMessage.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+        });
 
         buttonCollector?.on('collect', async (i) => {
-            const user = await prisma.user.findFirst({ where: { userDiscordId: i.user.id, guildId: dbGuild.id } });
+            const user = await prisma.user.findFirst({
+                where: { userDiscordId: i.user.id, guildId: dbGuild.id },
+            });
 
             if (!user) {
-                await i.reply({ content: `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`, flags: MessageFlags.Ephemeral });
+                await i.reply({
+                    content: `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`,
+                    flags: MessageFlags.Ephemeral,
+                });
                 return;
             }
 
-            const queuedUser = await prisma.queue.findFirst({ where: { userId: user.id } });
+            const queuedUser = await prisma.queue.findFirst({
+                where: { userId: user.id },
+            });
 
             switch (i.customId) {
                 case 'queueButton':
                     if (queuedUser) {
-                        await i.reply({ content: 'You are already in queue!', flags: MessageFlags.Ephemeral });
+                        await i.reply({
+                            content: 'You are already in queue!',
+                            flags: MessageFlags.Ephemeral,
+                        });
                         return;
                     }
 
                     await prisma.queue.create({ data: { userId: user.id } });
                     await i.member.roles.add(queueRoleId);
-                    await i.reply({ content: 'Queue joined!', flags: MessageFlags.Ephemeral });
+                    await i.reply({
+                        content: 'Queue joined!',
+                        flags: MessageFlags.Ephemeral,
+                    });
 
                     await tryMatchCreation(dbGuild.id);
 
                     break;
                 case 'leaveButton':
                     if (!queuedUser) {
-                        await i.reply({ content: 'You are not in queue!', flags: MessageFlags.Ephemeral });
+                        await i.reply({
+                            content: 'You are not in queue!',
+                            flags: MessageFlags.Ephemeral,
+                        });
                         return;
                     }
 
                     await prisma.queue.delete({ where: { userId: user.id } });
                     await i.member.roles.remove(queueRoleId);
-                    await i.reply({ content: 'Queue left!', flags: MessageFlags.Ephemeral });
+                    await i.reply({
+                        content: 'Queue left!',
+                        flags: MessageFlags.Ephemeral,
+                    });
                     break;
             }
         });
 
-        interaction.reply({ content: 'Queue has been launched!', flags: MessageFlags.Ephemeral });
+        interaction.reply({
+            content: 'Queue has been launched!',
+            flags: MessageFlags.Ephemeral,
+        });
     } else {
-        interaction.reply({ content: 'Cannot send messages to queue channel, check bot permissions!', flags: MessageFlags.Ephemeral });
+        interaction.reply({
+            content:
+                'Cannot send messages to queue channel, check bot permissions!',
+            flags: MessageFlags.Ephemeral,
+        });
     }
 }
 

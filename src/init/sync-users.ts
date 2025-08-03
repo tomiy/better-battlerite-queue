@@ -6,7 +6,9 @@ export async function syncUsers(guild: Guild) {
     try {
         DebugUtils.debug(`[Sync users] Syncing users for guild ${guild.id}`);
 
-        const dbGuild = await prisma.guild.findFirstOrThrow({ where: { guildDiscordId: guild.id } });
+        const dbGuild = await prisma.guild.findFirstOrThrow({
+            where: { guildDiscordId: guild.id },
+        });
 
         const queueRole = dbGuild.queueRole;
         const registeredRole = dbGuild.registeredRole;
@@ -16,18 +18,27 @@ export async function syncUsers(guild: Guild) {
         }
 
         if (registeredRole === null) {
-            throw new Error('[Sync users] No registered role found, check bot logs');
+            throw new Error(
+                '[Sync users] No registered role found, check bot logs',
+            );
         }
 
         const members = await guild.members.fetch();
 
         const syncedMembers: GuildMember[] = [];
-        const dbUsers = await prisma.user.findMany({ where: { guild: { guildDiscordId: guild.id } } });
+        const dbUsers = await prisma.user.findMany({
+            where: { guild: { guildDiscordId: guild.id } },
+        });
 
         for (const dbUser of dbUsers) {
-            const matchingMember = members.find((m) => m.id === dbUser.userDiscordId);
+            const matchingMember = members.find(
+                (m) => m.id === dbUser.userDiscordId,
+            );
 
-            if (matchingMember && !matchingMember.roles.cache.has(registeredRole)) {
+            if (
+                matchingMember &&
+                !matchingMember.roles.cache.has(registeredRole)
+            ) {
                 matchingMember.roles.add(registeredRole);
 
                 syncedMembers.push(matchingMember);
@@ -35,15 +46,21 @@ export async function syncUsers(guild: Guild) {
         }
 
         for (const [clientUserId, clientUser] of members) {
-            const syncedMember = syncedMembers.find((syncedMember) => syncedMember.id === clientUserId);
-            const dbUser = dbUsers.find((dbUser) => dbUser.userDiscordId === clientUserId);
+            const syncedMember = syncedMembers.find(
+                (syncedMember) => syncedMember.id === clientUserId,
+            );
+            const dbUser = dbUsers.find(
+                (dbUser) => dbUser.userDiscordId === clientUserId,
+            );
 
             if (!syncedMember && !dbUser) {
                 clientUser.roles.remove(registeredRole);
             }
         }
 
-        const queuedMembers = members.filter((m) => m.roles.cache.has(queueRole));
+        const queuedMembers = members.filter((m) =>
+            m.roles.cache.has(queueRole),
+        );
 
         if (queuedMembers.size) {
             DebugUtils.debug('[Sync users] Purging old queued users...');
@@ -53,7 +70,9 @@ export async function syncUsers(guild: Guild) {
             DebugUtils.debug('[Sync users] Purged old queued users');
         }
 
-        DebugUtils.debug(`[Sync users] Successfully synced users for guild ${guild.id}`);
+        DebugUtils.debug(
+            `[Sync users] Successfully synced users for guild ${guild.id}`,
+        );
     } catch (e) {
         DebugUtils.error(`[Sync users] Error: ${e}`);
     }

@@ -8,14 +8,28 @@ const queueChannelName = 'bbq-queue';
 
 export async function setupChannels(guild: Guild) {
     try {
-        DebugUtils.debug(`[Setup channels] Syncing channels for guild ${guild.id}`);
+        DebugUtils.debug(
+            `[Setup channels] Syncing channels for guild ${guild.id}`,
+        );
 
-        let categoryChannel = guild.channels.cache.find((c) => c.name === categoryChannelName) as CategoryChannel | undefined;
-        let botCommandsChannel = guild.channels.cache.find((c) => c.name === botCommandsChannelName && c.parent?.name === categoryChannelName) as TextChannel | undefined;
-        let queueChannel = guild.channels.cache.find((c) => c.name === queueChannelName && c.parent?.name === categoryChannelName) as TextChannel | undefined;
+        let categoryChannel = guild.channels.cache.find(
+            (c) => c.name === categoryChannelName,
+        ) as CategoryChannel | undefined;
+        let botCommandsChannel = guild.channels.cache.find(
+            (c) =>
+                c.name === botCommandsChannelName &&
+                c.parent?.name === categoryChannelName,
+        ) as TextChannel | undefined;
+        let queueChannel = guild.channels.cache.find(
+            (c) =>
+                c.name === queueChannelName &&
+                c.parent?.name === categoryChannelName,
+        ) as TextChannel | undefined;
 
         if (!categoryChannel) {
-            DebugUtils.debug(`[Setup channels] Creating category channel ${categoryChannelName}`);
+            DebugUtils.debug(
+                `[Setup channels] Creating category channel ${categoryChannelName}`,
+            );
 
             categoryChannel = await guild.channels.create({
                 name: categoryChannelName,
@@ -24,13 +38,17 @@ export async function setupChannels(guild: Guild) {
             });
 
             if (!categoryChannel) {
-                DebugUtils.error('[Setup channels] Could not create category channel');
+                DebugUtils.error(
+                    '[Setup channels] Could not create category channel',
+                );
                 return;
             }
         }
 
         if (!botCommandsChannel) {
-            DebugUtils.debug(`[Setup channels] Creating channel ${botCommandsChannelName}`);
+            DebugUtils.debug(
+                `[Setup channels] Creating channel ${botCommandsChannelName}`,
+            );
 
             botCommandsChannel = await guild.channels.create({
                 name: botCommandsChannelName,
@@ -39,13 +57,17 @@ export async function setupChannels(guild: Guild) {
             });
 
             if (!botCommandsChannel) {
-                DebugUtils.error('[Setup channels] Could not create bot commands channel');
+                DebugUtils.error(
+                    '[Setup channels] Could not create bot commands channel',
+                );
                 return;
             }
         }
 
         if (!queueChannel) {
-            DebugUtils.debug(`[Setup channels] Creating channel ${queueChannelName}`);
+            DebugUtils.debug(
+                `[Setup channels] Creating channel ${queueChannelName}`,
+            );
 
             queueChannel = await guild.channels.create({
                 name: queueChannelName,
@@ -54,7 +76,9 @@ export async function setupChannels(guild: Guild) {
             });
 
             if (!queueChannel) {
-                DebugUtils.error('[Setup channels] Could not create queue channel');
+                DebugUtils.error(
+                    '[Setup channels] Could not create queue channel',
+                );
                 return;
             }
         }
@@ -69,7 +93,9 @@ export async function setupChannels(guild: Guild) {
             },
         });
 
-        DebugUtils.debug(`[Setup channels] Successfully synced channels for guild ${guild.id}`);
+        DebugUtils.debug(
+            `[Setup channels] Successfully synced channels for guild ${guild.id}`,
+        );
     } catch (e) {
         DebugUtils.error(`[Setup channels] Error: ${e}`);
     }
