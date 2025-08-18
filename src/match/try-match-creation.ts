@@ -50,7 +50,9 @@ export async function tryMatchCreation(guildId: number) {
         }
     }
 
-    DebugUtils.debug(`[Match Creation] best config found: ${bestConfig}`);
+    DebugUtils.debug(
+        `[Match Creation] best config found: ${JSON.stringify(bestConfig)}`,
+    );
 
     const match = await prisma.match.create({
         data: {
