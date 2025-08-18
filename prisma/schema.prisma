@@ -20,6 +20,9 @@ model Guild {
     registeredRole     String?
     queueRole          String?
     users              User[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model User {
@@ -30,12 +33,58 @@ model User {
     inGameName    String
     elo           Int    @default(1000)
 
-    queue Queue?
+    queue     Queue?
+    MatchUser MatchUser[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Queue {
-    id        Int      @id @default(autoincrement())
-    user      User     @relation(fields: [userId], references: [id])
-    userId    Int      @unique
-    queueTime DateTime @default(now())
+    id     Int  @id @default(autoincrement())
+    user   User @relation(fields: [userId], references: [id])
+    userId Int  @unique
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Match {
+    id    Int         @id @default(autoincrement())
+    teams MatchTeam[]
+    state MatchState  @default(NEW)
+
+    team1Channel String?
+    team2Channel String?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model MatchTeam {
+    id      Int         @id @default(autoincrement())
+    match   Match       @relation(fields: [matchId], references: [id])
+    matchId Int
+    users   MatchUser[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model MatchUser {
+    id     Int       @id @default(autoincrement())
+    user   User      @relation(fields: [userId], references: [id])
+    userId Int
+    team   MatchTeam @relation(fields: [teamId], references: [id])
+    teamId Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+enum MatchState {
+    NEW
+    DRAFT
+    ONGOING
+    FINISHED
 }
