@@ -56,6 +56,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             'What characters/roles do you play? How chill are you? etc.',
         )
         .setStyle(TextInputStyle.Paragraph)
+        .setRequired(false)
         .setValue(initialUser.description || '');
     const descriptionRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
