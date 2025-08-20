@@ -126,6 +126,14 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         await discordMember.roles.add(dbGuild.matchRole!);
     }
 
+    const deleted = prisma.queue.deleteMany({
+        where: { userId: { in: matchUserData.map((u) => u.userId) } },
+    });
+
+    if (!deleted) {
+        throw new Error('[Match Creation] Could not remove users from queue!');
+    }
+
     match.teams[0].users = matchUserData.splice(0, teamSize);
     match.teams[1].users = matchUserData;
 

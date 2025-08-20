@@ -9,8 +9,9 @@ import {
     SlashCommandBuilder,
     TextChannel,
 } from 'discord.js';
-import { Guild as dbGuild } from '../../../.prisma';
+import { Guild as dbGuild, Region } from '../../../.prisma';
 import { prisma } from '../../config';
+import { joinQueue, leaveQueue, toggleRegion } from '../../db/queue-functions';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botModGuard } from '../../guards/bot-mod.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
@@ -67,8 +68,25 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             .addComponents(queueButton)
             .addComponents(leaveButton);
 
+        const toggleEUButton = new ButtonBuilder()
+            .setCustomId('toggleEUButton')
+            .setLabel(Region.EU)
+            .setStyle(ButtonStyle.Secondary);
+        const toggleNAButton = new ButtonBuilder()
+            .setCustomId('toggleNAButton')
+            .setLabel(Region.NA)
+            .setStyle(ButtonStyle.Secondary);
+        const toggleSAButton = new ButtonBuilder()
+            .setCustomId('toggleSAButton')
+            .setLabel(Region.SA)
+            .setStyle(ButtonStyle.Secondary);
+        const regionButtonsRow = new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(toggleEUButton)
+            .addComponents(toggleNAButton)
+            .addComponents(toggleSAButton);
+
         const queueMessage = await queueChannel.send({
-            components: [queueButtonsRow],
+            components: [queueButtonsRow, regionButtonsRow],
         });
 
         const buttonCollector = queueMessage.createMessageComponentCollector({
@@ -94,39 +112,21 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
 
             switch (i.customId) {
                 case 'queueButton':
-                    if (queuedUser) {
-                        await i.reply({
-                            content: 'You are already in queue!',
-                            flags: MessageFlags.Ephemeral,
-                        });
-                        return;
+                    if (await joinQueue(queuedUser, user, i, queueRoleId)) {
+                        await tryMatchCreation(dbGuild, i.member.guild);
                     }
-
-                    await prisma.queue.create({ data: { userId: user.id } });
-                    await i.member.roles.add(queueRoleId);
-                    await i.reply({
-                        content: 'Queue joined!',
-                        flags: MessageFlags.Ephemeral,
-                    });
-
-                    await tryMatchCreation(dbGuild, i.member.guild);
-
                     break;
                 case 'leaveButton':
-                    if (!queuedUser) {
-                        await i.reply({
-                            content: 'You are not in queue!',
-                            flags: MessageFlags.Ephemeral,
-                        });
-                        return;
-                    }
-
-                    await prisma.queue.delete({ where: { userId: user.id } });
-                    await i.member.roles.remove(queueRoleId);
-                    await i.reply({
-                        content: 'Queue left!',
-                        flags: MessageFlags.Ephemeral,
-                    });
+                    await leaveQueue(queuedUser, user, i, queueRoleId);
+                    break;
+                case 'toggleEUButton':
+                    await toggleRegion(user, Region.EU, i, queueRoleId);
+                    break;
+                case 'toggleNAButton':
+                    await toggleRegion(user, Region.NA, i, queueRoleId);
+                    break;
+                case 'toggleSAButton':
+                    await toggleRegion(user, Region.SA, i, queueRoleId);
                     break;
             }
         });

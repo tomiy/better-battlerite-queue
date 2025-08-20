@@ -32,6 +32,7 @@ model User {
     guild         Guild        @relation(fields: [guildId], references: [id])
     guildId       Int
     inGameName    String
+    description   String?
     region        UserRegion[]
     elo           Int          @default(1000)
 
