@@ -4,6 +4,7 @@ import { DebugUtils } from '../debug-utils';
 
 const registeredRoleName = 'BBQ Registered';
 const queueRoleName = 'BBQ In Queue';
+const matchRoleName = 'BBQ In Match';
 const botModRoleName = 'BBQ Bot Moderator';
 
 export async function setupRoles(guild: Guild) {
@@ -14,6 +15,7 @@ export async function setupRoles(guild: Guild) {
             (r) => r.name === registeredRoleName,
         );
         let queueRole = guild.roles.cache.find((r) => r.name === queueRoleName);
+        let matchRole = guild.roles.cache.find((r) => r.name === matchRoleName);
         let botModRole = guild.roles.cache.find(
             (r) => r.name === botModRoleName,
         );
@@ -52,6 +54,22 @@ export async function setupRoles(guild: Guild) {
             }
         }
 
+        if (!matchRole) {
+            DebugUtils.debug(`[Setup roles] Creating role ${matchRoleName}`);
+
+            matchRole = await guild.roles.create({
+                name: matchRoleName,
+                color: 'Orange',
+                hoist: true,
+                position: 0,
+            });
+
+            if (!matchRole) {
+                DebugUtils.error('[Setup roles] Could not create match role');
+                return;
+            }
+        }
+
         if (!botModRole) {
             DebugUtils.debug(`[Setup roles] Creating role ${botModRoleName}`);
 
@@ -74,6 +92,7 @@ export async function setupRoles(guild: Guild) {
             data: {
                 registeredRole: registeredRole.id,
                 queueRole: queueRole.id,
+                matchRole: matchRole.id,
                 botModRole: botModRole.id,
             },
         });

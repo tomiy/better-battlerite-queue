@@ -1,4 +1,11 @@
-import { Queue, Region, User, UserRegion } from '../../.prisma';
+import { Guild } from 'discord.js';
+import {
+    Guild as dbGuild,
+    Queue,
+    Region,
+    User,
+    UserRegion,
+} from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { initDraft } from './init-draft';
@@ -10,9 +17,9 @@ type QueueWithUser = Queue & { user: User & { region: UserRegion[] } };
 const matchSize = 6;
 const teamSize = 3;
 
-export async function tryMatchCreation(guildId: number) {
+export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     const queuedUsers: QueueWithUser[] = await prisma.queue.findMany({
-        where: { user: { guildId: guildId } },
+        where: { user: { guildId: dbGuild.id } },
         orderBy: { createdAt: 'asc' },
         include: { user: { include: { region: true } } },
     });
@@ -97,10 +104,26 @@ export async function tryMatchCreation(guildId: number) {
 
     const matchUserData = await prisma.matchUser.createManyAndReturn({
         data: [...team1UserData, ...team2UserData],
+        include: { user: true },
     });
 
     if (!matchUserData) {
         throw new Error('[Match Creation] could not create match users!');
+    }
+
+    for (const matchUser of matchUserData) {
+        const discordMember = guild.members.cache.get(
+            matchUser.user.userDiscordId,
+        );
+
+        if (!discordMember) {
+            throw new Error(
+                `[Match Creation] Could not find match discord member for user discord id ${matchUser.user.userDiscordId}`,
+            );
+        }
+
+        await discordMember.roles.remove(dbGuild.queueRole!);
+        await discordMember.roles.add(dbGuild.matchRole!);
     }
 
     match.teams[0].users = matchUserData.splice(0, teamSize);

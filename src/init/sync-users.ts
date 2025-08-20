@@ -11,10 +11,15 @@ export async function syncUsers(guild: Guild) {
         });
 
         const queueRole = dbGuild.queueRole;
+        const matchRole = dbGuild.matchRole;
         const registeredRole = dbGuild.registeredRole;
 
         if (queueRole === null) {
             throw new Error('[Sync users] No queue role found, check bot logs');
+        }
+
+        if (matchRole === null) {
+            throw new Error('[Sync users] No match role found, check bot logs');
         }
 
         if (registeredRole === null) {
@@ -68,6 +73,20 @@ export async function syncUsers(guild: Guild) {
             queuedMembers.forEach(async (m) => await m.roles.remove(queueRole));
 
             DebugUtils.debug('[Sync users] Purged old queued users');
+        }
+
+        const matchedMembers = members.filter((m) =>
+            m.roles.cache.has(matchRole),
+        );
+
+        if (matchedMembers.size) {
+            DebugUtils.debug('[Sync users] Purging old matched users...');
+
+            matchedMembers.forEach(
+                async (m) => await m.roles.remove(matchRole),
+            );
+
+            DebugUtils.debug('[Sync users] Purged old matched users');
         }
 
         DebugUtils.debug(

@@ -109,7 +109,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                         flags: MessageFlags.Ephemeral,
                     });
 
-                    await tryMatchCreation(dbGuild.id);
+                    await tryMatchCreation(dbGuild, i.member.guild);
 
                     break;
                 case 'leaveButton':

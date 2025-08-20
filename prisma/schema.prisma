@@ -18,6 +18,7 @@ model Guild {
     queueChannel       String?
     botModRole         String?
     registeredRole     String?
+    matchRole          String?
     queueRole          String?
     users              User[]
 
