@@ -8,6 +8,21 @@ export async function joinQueue(
     i: ButtonInteraction<'cached'>,
     queueRoleId: string,
 ) {
+    const matchUser = await prisma.match.findFirst({
+        where: {
+            state: { not: 'FINISHED' },
+            teams: { some: { users: { some: { userId: user.id } } } },
+        },
+    });
+
+    if (matchUser) {
+        await i.reply({
+            content: 'You are in a match!',
+            flags: MessageFlags.Ephemeral,
+        });
+        return false;
+    }
+
     if (queuedUser) {
         await i.reply({
             content: 'You are already in queue!',

@@ -126,7 +126,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         await discordMember.roles.add(dbGuild.matchRole!);
     }
 
-    const deleted = prisma.queue.deleteMany({
+    const deleted = await prisma.queue.deleteMany({
         where: { userId: { in: matchUserData.map((u) => u.userId) } },
     });
 
