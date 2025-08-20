@@ -89,6 +89,11 @@ export async function syncUsers(guild: Guild) {
             DebugUtils.debug('[Sync users] Purged old matched users');
         }
 
+        await prisma.match.updateMany({
+            data: { state: 'FINISHED' },
+            where: { state: { not: 'FINISHED' } },
+        });
+
         DebugUtils.debug(
             `[Sync users] Successfully synced users for guild ${guild.id}`,
         );

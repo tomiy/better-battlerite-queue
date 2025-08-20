@@ -86,7 +86,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         data: {
             teams: { createMany: { data: [{}, {}] } },
         },
-        include: { teams: { include: { users: true } } },
+        include: { teams: { include: { users: { include: { user: true } } } } },
     });
 
     if (!match) {
@@ -137,7 +137,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     match.teams[0].users = matchUserData.splice(0, teamSize);
     match.teams[1].users = matchUserData;
 
-    await initDraft(match);
+    await initDraft(match, dbGuild, guild);
 }
 
 function permuteMatchUsers(a: QueueWithUser[]) {

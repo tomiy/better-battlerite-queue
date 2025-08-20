@@ -1,10 +1,17 @@
-import { CategoryChannel, ChannelType, Guild, TextChannel } from 'discord.js';
-import { prisma } from '../config';
+import {
+    CategoryChannel,
+    ChannelType,
+    Guild,
+    PermissionsBitField,
+    TextChannel,
+} from 'discord.js';
+import {
+    botCommandsChannelName,
+    categoryChannelName,
+    prisma,
+    queueChannelName,
+} from '../config';
 import { DebugUtils } from '../debug-utils';
-
-const categoryChannelName = 'Better Battlerite Queue';
-const botCommandsChannelName = 'bbq-bot-commands';
-const queueChannelName = 'bbq-queue';
 
 export async function setupChannels(guild: Guild) {
     try {
@@ -73,6 +80,16 @@ export async function setupChannels(guild: Guild) {
                 name: queueChannelName,
                 parent: categoryChannel,
                 type: ChannelType.GuildText,
+                permissionOverwrites: [
+                    {
+                        id: guild.id,
+                        deny: [PermissionsBitField.Flags.SendMessages],
+                    },
+                    {
+                        id: guild.members.me?.id || '',
+                        allow: [PermissionsBitField.Flags.SendMessages],
+                    },
+                ],
             });
 
             if (!queueChannel) {

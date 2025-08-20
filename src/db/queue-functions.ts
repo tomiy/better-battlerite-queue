@@ -106,6 +106,8 @@ export async function toggleRegion(
             content: `Region ${region} enabled!`,
             flags: MessageFlags.Ephemeral,
         });
+
+        return true;
     } else {
         const deleted = await prisma.userRegion.delete({
             where: { id: existingRegion.id },
@@ -136,5 +138,7 @@ export async function toggleRegion(
                 });
             }
         }
+
+        return false;
     }
 }

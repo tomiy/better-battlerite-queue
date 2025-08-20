@@ -15,4 +15,8 @@ export const config = {
     DEBUG_LEVEL,
 };
 
+export const categoryChannelName = 'Better Battlerite Queue';
+export const botCommandsChannelName = 'bbq-bot-commands';
+export const queueChannelName = 'bbq-queue';
+
 export const prisma = new PrismaClient();

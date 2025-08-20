@@ -120,13 +120,19 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                     await leaveQueue(queuedUser, user, i, queueRoleId);
                     break;
                 case 'toggleEUButton':
-                    await toggleRegion(user, Region.EU, i, queueRoleId);
+                    if (await toggleRegion(user, Region.EU, i, queueRoleId)) {
+                        tryMatchCreation(dbGuild, i.member.guild);
+                    }
                     break;
                 case 'toggleNAButton':
-                    await toggleRegion(user, Region.NA, i, queueRoleId);
+                    if (await toggleRegion(user, Region.NA, i, queueRoleId)) {
+                        tryMatchCreation(dbGuild, i.member.guild);
+                    }
                     break;
                 case 'toggleSAButton':
-                    await toggleRegion(user, Region.SA, i, queueRoleId);
+                    if (await toggleRegion(user, Region.SA, i, queueRoleId)) {
+                        tryMatchCreation(dbGuild, i.member.guild);
+                    }
                     break;
             }
         });
