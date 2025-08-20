@@ -8,23 +8,26 @@ import {
     TextInputBuilder,
     TextInputStyle,
 } from 'discord.js';
-import { Guild as dbGuild } from '../../../.prisma';
+import { Guild as dbGuild, Region } from '../../../.prisma';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
 import { Command } from '../command';
 
+const validRegionStrings: string[] = Object.values(Region);
+
 const data = new SlashCommandBuilder()
     .setName('profile')
     .setDescription('Profile');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const user = await prisma.user.findFirst({
+    const initialUser = await prisma.user.findFirst({
         where: { userDiscordId: interaction.user.id, guildId: dbGuild.id },
+        include: { region: true },
     });
 
-    if (!user) {
+    if (!initialUser) {
         await interaction.reply({
             content: 'You are not registered! use /register',
             flags: MessageFlags.Ephemeral,
@@ -42,13 +45,25 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
         .setLabel('Battlerite username')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setValue(user.inGameName);
+        .setValue(initialUser.inGameName);
     const inGameNameRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             inGameNameInput,
         );
 
-    profileModal.addComponents(inGameNameRow);
+    const regionInput = new TextInputBuilder()
+        .setCustomId('regionInput')
+        .setLabel(`Region(s) (available regions: ${validRegionStrings})`)
+        .setPlaceholder('Comma separated list (example: EU,NA)')
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true)
+        .setValue(initialUser.region.map((r) => r.region).toString());
+    const regionRow =
+        new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+            regionInput,
+        );
+
+    profileModal.addComponents(inGameNameRow, regionRow);
 
     await interaction.showModal(profileModal);
 
@@ -62,6 +77,35 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const inGameName =
                 submitted.fields.getTextInputValue('inGameNameInput');
 
+            const regions = submitted.fields
+                .getTextInputValue('regionInput')
+                .split(',')
+                .map((r) => r.trim().toUpperCase());
+
+            for (const region of regions) {
+                if (!validRegionStrings.includes(region)) {
+                    submitted.reply({
+                        content: `Invalid region: ${region}. Available regions: ${validRegionStrings}`,
+                        flags: MessageFlags.Ephemeral,
+                    });
+                    return;
+                }
+            }
+
+            const userRegions = regions.map((r) => ({
+                region: r as Region,
+            }));
+
+            const deleted = await prisma.userRegion.deleteMany({
+                where: {
+                    userId: initialUser.id,
+                },
+            });
+
+            if (!deleted) {
+                throw new Error('[Profile] Could not delete user regions!');
+            }
+
             const user = await prisma.user.update({
                 where: {
                     userDiscordId: interaction.user.id,
@@ -69,6 +113,11 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 },
                 data: {
                     inGameName: inGameName,
+                    region: {
+                        createMany: {
+                            data: userRegions,
+                        },
+                    },
                 },
             });
 

@@ -1,9 +1,11 @@
-import { Queue, User } from '../../.prisma';
+import { Queue, Region, User, UserRegion } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { initDraft } from './init-draft';
 
-type QueueWithUser = Queue & { user: User };
+const validRegionStrings = Object.values(Region);
+
+type QueueWithUser = Queue & { user: User & { region: UserRegion[] } };
 
 const matchSize = 6;
 const teamSize = 3;
@@ -12,17 +14,40 @@ export async function tryMatchCreation(guildId: number) {
     const queuedUsers: QueueWithUser[] = await prisma.queue.findMany({
         where: { user: { guildId: guildId } },
         orderBy: { createdAt: 'asc' },
-        include: { user: true },
+        include: { user: { include: { region: true } } },
     });
 
-    if (queuedUsers.length < 6) {
+    if (queuedUsers.length < matchSize) {
         DebugUtils.debug(
             '[Match Creation] not enough users in queue to create match',
         );
         return;
     }
 
-    const matchUsers = queuedUsers.splice(0, matchSize);
+    const usersByRegion: Map<Region, QueueWithUser[]> = new Map();
+    validRegionStrings.forEach((region) => {
+        if (!usersByRegion.has(region)) {
+            usersByRegion.set(region, []);
+        }
+
+        queuedUsers.forEach((queuedUser) => {
+            if (queuedUser.user.region.map((r) => r.region).includes(region)) {
+                usersByRegion.get(region)?.push(queuedUser);
+            }
+        });
+    });
+
+    const firstQueuedUsersByRegion = usersByRegion
+        .values()
+        .find((u) => u.length >= matchSize);
+    if (!firstQueuedUsersByRegion) {
+        DebugUtils.debug(
+            '[Match Creation] not enough users grouped by region to create match',
+        );
+        return;
+    }
+
+    const matchUsers = firstQueuedUsersByRegion.splice(0, matchSize);
     const matchUsersPermutations = permuteMatchUsers(matchUsers);
 
     const bestConfig: {
@@ -49,10 +74,6 @@ export async function tryMatchCreation(guildId: number) {
             bestConfig.team2 = team2;
         }
     }
-
-    DebugUtils.debug(
-        `[Match Creation] best config found: ${JSON.stringify(bestConfig)}`,
-    );
 
     const match = await prisma.match.create({
         data: {

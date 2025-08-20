@@ -26,18 +26,26 @@ model Guild {
 }
 
 model User {
-    id            Int    @id @default(autoincrement())
-    userDiscordId String @unique
-    guild         Guild  @relation(fields: [guildId], references: [id])
+    id            Int          @id @default(autoincrement())
+    userDiscordId String       @unique
+    guild         Guild        @relation(fields: [guildId], references: [id])
     guildId       Int
     inGameName    String
-    elo           Int    @default(1000)
+    region        UserRegion[]
+    elo           Int          @default(1000)
 
     queue     Queue?
     MatchUser MatchUser[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+}
+
+model UserRegion {
+    id     Int    @id @default(autoincrement())
+    user   User   @relation(fields: [userId], references: [id])
+    userId Int
+    region Region
 }
 
 model Queue {
@@ -87,4 +95,10 @@ enum MatchState {
     DRAFT
     ONGOING
     FINISHED
+}
+
+enum Region {
+    EU
+    NA
+    SA
 }
