@@ -47,6 +47,10 @@ client.on(Events.GuildDelete, async (guild) => {
     await deleteGuild(guild.id);
 });
 
+client.on(Events.GuildMemberAdd, async (member) => {
+    await member.guild.members.fetch();
+});
+
 client.on(Events.InteractionCreate, (interaction) => {
     if (!interaction.isCommand()) {
         return;

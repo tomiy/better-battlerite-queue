@@ -37,19 +37,35 @@ export async function initDraft(
         permissionOverwrites: [
             {
                 id: guild.id,
-                deny: [PermissionsBitField.Flags.SendMessages],
+                deny: [PermissionsBitField.Flags.ViewChannel],
+            },
+            {
+                id: guild.members.me?.id || '',
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[0].users[0].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[0].users[1].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[0].users[2].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
         ],
     });
@@ -61,19 +77,35 @@ export async function initDraft(
         permissionOverwrites: [
             {
                 id: guild.id,
-                deny: [PermissionsBitField.Flags.SendMessages],
+                deny: [PermissionsBitField.Flags.ViewChannel],
+            },
+            {
+                id: guild.members.me?.id || '',
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[1].users[0].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[1].users[1].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
             {
                 id: match.teams[1].users[2].user.userDiscordId,
-                allow: [PermissionsBitField.Flags.SendMessages],
+                allow: [
+                    PermissionsBitField.Flags.ViewChannel,
+                    PermissionsBitField.Flags.SendMessages,
+                ],
             },
         ],
     });
