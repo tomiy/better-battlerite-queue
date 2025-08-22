@@ -89,10 +89,24 @@ export async function syncUsers(guild: Guild) {
             DebugUtils.debug('[Sync users] Purged old matched users');
         }
 
-        await prisma.match.updateMany({
+        DebugUtils.debug('[Sync users] Closing old matches...');
+
+        const finishedMatches = await prisma.match.updateManyAndReturn({
             data: { state: 'FINISHED' },
             where: { state: { not: 'FINISHED' } },
         });
+
+        for (const finishedMatch of finishedMatches) {
+            if (finishedMatch.team1Channel) {
+                await guild.channels.delete(finishedMatch.team1Channel);
+            }
+
+            if (finishedMatch.team2Channel) {
+                await guild.channels.delete(finishedMatch.team2Channel);
+            }
+        }
+
+        DebugUtils.debug('[Sync users] Closed old matches');
 
         DebugUtils.debug(
             `[Sync users] Successfully synced users for guild ${guild.id}`,
