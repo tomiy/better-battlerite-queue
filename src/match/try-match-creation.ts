@@ -1,18 +1,14 @@
 import { Guild } from 'discord.js';
-import {
-    Guild as dbGuild,
-    Queue,
-    Region,
-    User,
-    UserRegion,
-} from '../../.prisma';
+import { Guild as dbGuild, Prisma, Region } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { initDraft } from './init-draft';
 
 const validRegionStrings = Object.values(Region);
 
-type QueueWithUser = Queue & { user: User & { region: UserRegion[] } };
+type QueueWithUser = Prisma.QueueGetPayload<{
+    include: { user: { include: { region: true } } };
+}>;
 
 const matchSize = 6;
 const teamSize = 3;
@@ -137,7 +133,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     match.teams[0].users = matchUserData.splice(0, teamSize);
     match.teams[1].users = matchUserData;
 
-    await initDraft(match, dbGuild, guild);
+    await initDraft(match, guild);
 }
 
 function permuteMatchUsers(a: QueueWithUser[]) {

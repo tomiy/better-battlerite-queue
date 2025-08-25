@@ -1,27 +1,18 @@
 import {
     CategoryChannel,
     ChannelType,
-    EmbedBuilder,
     Guild,
     PermissionsBitField,
-    userMention,
 } from 'discord.js';
-import {
-    Guild as dbGuild,
-    Match,
-    MatchTeam,
-    MatchUser,
-    User,
-} from '../../.prisma';
+import { MatchUser, Prisma, User } from '../../.prisma';
 import { categoryChannelName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-
-type MatchTeamWithUsers = MatchTeam & { users: (MatchUser & { user: User })[] };
-type MatchWithTeams = Match & { teams: MatchTeamWithUsers[] };
+import { buildDraftEmbed } from './build-draft-embed';
 
 export async function initDraft(
-    match: MatchWithTeams,
-    dbGuild: dbGuild,
+    match: Prisma.MatchGetPayload<{
+        include: { teams: { include: { users: { include: { user: true } } } } };
+    }>,
     guild: Guild,
 ) {
     DebugUtils.debug(`[Init Draft] initializing draft for match ${match.id}`);
@@ -30,11 +21,10 @@ export async function initDraft(
         (c) => c.name === categoryChannelName,
     ) as CategoryChannel | undefined;
 
-    const team1Channel = await guild.channels.create({
-        name: `${match.id}-team-1`,
-        parent: categoryChannel,
-        type: ChannelType.GuildText,
-        permissionOverwrites: [
+    const mapTeamUsersToPermissionOverwrites = (
+        users: (MatchUser & { user: User })[],
+    ) => {
+        return [
             {
                 id: guild.id,
                 deny: [PermissionsBitField.Flags.ViewChannel],
@@ -46,68 +36,32 @@ export async function initDraft(
                     PermissionsBitField.Flags.SendMessages,
                 ],
             },
-            {
-                id: match.teams[0].users[0].user.userDiscordId,
+            ...users.map((u) => ({
+                id: u.user.userDiscordId,
                 allow: [
                     PermissionsBitField.Flags.ViewChannel,
                     PermissionsBitField.Flags.SendMessages,
                 ],
-            },
-            {
-                id: match.teams[0].users[1].user.userDiscordId,
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-            {
-                id: match.teams[0].users[2].user.userDiscordId,
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-        ],
+            })),
+        ];
+    };
+
+    const team1Channel = await guild.channels.create({
+        name: `${match.id}-team-1`,
+        parent: categoryChannel,
+        type: ChannelType.GuildText,
+        permissionOverwrites: mapTeamUsersToPermissionOverwrites(
+            match.teams[0].users,
+        ),
     });
 
     const team2Channel = await guild.channels.create({
         name: `${match.id}-team-2`,
         parent: categoryChannel,
         type: ChannelType.GuildText,
-        permissionOverwrites: [
-            {
-                id: guild.id,
-                deny: [PermissionsBitField.Flags.ViewChannel],
-            },
-            {
-                id: guild.members.me?.id || '',
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-            {
-                id: match.teams[1].users[0].user.userDiscordId,
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-            {
-                id: match.teams[1].users[1].user.userDiscordId,
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-            {
-                id: match.teams[1].users[2].user.userDiscordId,
-                allow: [
-                    PermissionsBitField.Flags.ViewChannel,
-                    PermissionsBitField.Flags.SendMessages,
-                ],
-            },
-        ],
+        permissionOverwrites: mapTeamUsersToPermissionOverwrites(
+            match.teams[1].users,
+        ),
     });
 
     await prisma.match.update({
@@ -119,28 +73,8 @@ export async function initDraft(
         },
     });
 
-    const matchEmbed = new EmbedBuilder()
-        .setAuthor({ name: `Match #${match.id}`, iconURL: guild.iconURL()! })
-        .addFields(
-            {
-                name: 'Team 1',
-                value: `
-                    ${userMention(match.teams[0].users[0].user.userDiscordId)}
-                    ${userMention(match.teams[0].users[1].user.userDiscordId)}
-                    ${userMention(match.teams[0].users[2].user.userDiscordId)}
-                `,
-            },
-            {
-                name: 'Team 2',
-                value: `
-                    ${userMention(match.teams[1].users[0].user.userDiscordId)}
-                    ${userMention(match.teams[1].users[1].user.userDiscordId)}
-                    ${userMention(match.teams[1].users[2].user.userDiscordId)}
-                `,
-            },
-        )
-        .setTimestamp();
+    const draftEmbed = buildDraftEmbed(match, guild);
 
-    await team1Channel.send({ embeds: [matchEmbed] });
-    await team2Channel.send({ embeds: [matchEmbed] });
+    await team1Channel.send({ embeds: [draftEmbed] });
+    await team2Channel.send({ embeds: [draftEmbed] });
 }
