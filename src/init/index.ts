@@ -2,6 +2,7 @@ import { Client, Guild } from 'discord.js';
 import { deployCommands } from './deploy-commands';
 import { setupChannels } from './setup-channels';
 import { setupRoles } from './setup-roles';
+import { syncDefaultData } from './sync-default-data';
 import { syncUsers } from './sync-users';
 
 export async function initGuild(client: Client, guild?: Guild) {
@@ -10,5 +11,6 @@ export async function initGuild(client: Client, guild?: Guild) {
         await setupChannels(guild);
         await setupRoles(guild);
         await syncUsers(guild);
+        await syncDefaultData(guild);
     }
 }

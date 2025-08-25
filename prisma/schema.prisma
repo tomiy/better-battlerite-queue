@@ -22,6 +22,9 @@ model Guild {
     queueRole          String?
     users              User[]
 
+    mapData      MapData[]
+    championData ChampionData[]
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -92,6 +95,26 @@ model MatchUser {
     updatedAt DateTime @updatedAt
 }
 
+model ChampionData {
+    id      Int   @id @default(autoincrement())
+    guild   Guild @relation(fields: [guildId], references: [id])
+    guildId Int
+
+    champion     Champion
+    type         ChampionType
+    restrictions String
+}
+
+model MapData {
+    id      Int   @id @default(autoincrement())
+    guild   Guild @relation(fields: [guildId], references: [id])
+    guildId Int
+
+    map     Map
+    variant MapVariant
+    weight  Int
+}
+
 enum MatchState {
     NEW
     DRAFT
@@ -103,4 +126,60 @@ enum Region {
     EU
     NA
     SA
+}
+
+enum ChampionType {
+    MELEE
+    RANGED
+    SUPPORT
+}
+
+enum Champion {
+    BAKKO
+    CROAK
+    FREYA
+    JAMILA
+    RAIGON
+    ROOK
+    RUH_KAAN
+    SHIFU
+    THORN
+
+    ALYSIA
+    ASHKA
+    DESTINY
+    EZMO
+    IVA
+    JADE
+    JUMONG
+    SHEN_RAO
+    TAYA
+    VARESH
+
+    BLOSSOM
+    LUCIE
+    OLDUR
+    PEARL
+    PESTILUS
+    POLOMA
+    SIRIUS
+    ULRIC
+    ZANDER
+}
+
+enum MapVariant {
+    DAY
+    NIGHT
+}
+
+enum Map {
+    MOUNT_ARAZ
+    ORMAN_TEMPLE
+    SKY_RING
+    BLACKSTONE_ARENA
+    DRAGON_GARDEN
+    DAHARIN_BATTLEGROUNDS
+    MISTY_WOODS
+    MERIKO_SUMMIT
+    THE_GREAT_MARKET
 }
