@@ -6,12 +6,12 @@
     },
     {
         "name": "Orman Temple",
-        "day": 1,
+        "day": 0,
         "night": 10
     },
     {
         "name": "Sky Ring",
-        "day": 1,
+        "day": 0,
         "night": 15
     },
     {
@@ -31,8 +31,8 @@
     },
     {
         "name": "Misty Woods",
-        "day": 1,
-        "night": 1
+        "day": 0,
+        "night": 0
     },
     {
         "name": "Meriko Summit",

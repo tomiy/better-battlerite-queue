@@ -15,6 +15,9 @@ const data = new SlashCommandBuilder()
     .addSubcommand((sub) =>
         sub.setName('reset').setDescription('Resets the queue'),
     )
+    .addSubcommand((sub) =>
+        sub.setName('fill').setDescription('Fills the queue'),
+    )
     .setDescription('Queue admin functions') as SlashCommandBuilder;
 
 async function execute(interaction: CommandInteraction) {
@@ -61,6 +64,19 @@ async function execute(interaction: CommandInteraction) {
 
         await interaction.reply({
             content: 'Queue reset!',
+            flags: MessageFlags.Ephemeral,
+        });
+    }
+
+    if (interaction.options.getSubcommand() === 'fill') {
+        const allUsers = await prisma.user.findMany();
+
+        await prisma.queue.createMany({
+            data: allUsers.map((u) => ({ userId: u.id })),
+        });
+
+        await interaction.reply({
+            content: 'Queue filled!',
             flags: MessageFlags.Ephemeral,
         });
     }

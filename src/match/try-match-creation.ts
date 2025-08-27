@@ -88,6 +88,12 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
 
     DebugUtils.debug('[Match Creation] Found best config, creating match...');
 
+    const map = await selectRandomMap(dbGuild);
+
+    if (!map) {
+        throw new Error('[Match Creation] Could not pick a map!');
+    }
+
     const draftSequence = await prisma.matchDraftSequence.findFirstOrThrow({
         where: { name: defaultDraftSequenceName },
         include: { steps: { orderBy: { order: 'asc' } } },
@@ -95,6 +101,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
 
     const match = await prisma.match.create({
         data: {
+            mapId: map.id,
             teams: {
                 createMany: {
                     data: bestConfig.teams.map((_, i) => ({ order: i })),
@@ -112,11 +119,13 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     const teamsUserData: Prisma.MatchUserCreateManyInput[] = [];
     bestConfig.teams.forEach((team, teamIndex) => {
         teamsUserData.push(
-            ...team.map((teamUser, teamUserIndex) => ({
-                teamId: match.teams[teamIndex].id,
-                userId: teamUser.userId,
-                captain: teamUserIndex === 0,
-            })),
+            ...team
+                .sort((a, b) => b.user.elo - a.user.elo)
+                .map((teamUser, teamUserIndex) => ({
+                    teamId: match.teams[teamIndex].id,
+                    userId: teamUser.userId,
+                    captain: teamUserIndex === 0,
+                })),
         );
     });
 
@@ -173,4 +182,21 @@ function permuteMatchUsers(a: QueueWithUser[]) {
     permute(a);
 
     return result;
+}
+async function selectRandomMap(dbGuild: dbGuild) {
+    const maps = await prisma.mapData.findMany({
+        where: { guildId: dbGuild.id },
+    });
+    const totalMapWeights = maps.reduce((t, m) => t + m.weight, 0);
+    maps.sort(() => Math.random() - 0.5);
+
+    let r = Math.random() * totalMapWeights;
+    for (const map of maps) {
+        if (r < map.weight) {
+            return map;
+        }
+        r -= map.weight;
+    }
+
+    return null;
 }

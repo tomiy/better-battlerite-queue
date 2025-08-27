@@ -15,6 +15,7 @@ import {
 import { ChampionData, Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { championToChampionName } from '../data/championMappings';
+import { maptoMapName } from '../data/mapMappings';
 
 export async function sendDraftUI(
     matchId: number,
@@ -25,7 +26,8 @@ export async function sendDraftUI(
     const match = await prisma.match.findFirstOrThrow({
         where: { id: matchId },
         include: {
-            draftSequence: true,
+            map: true,
+            draftSequence: { include: { steps: true } },
             teams: { include: { users: { include: { user: true } } } },
         },
     });
@@ -67,9 +69,23 @@ export async function sendDraftUI(
         };
     });
 
+    const mapName = maptoMapName.get(match.map.map) || 'Unknown';
+    const mapVariantName = match.map.variant === 'DAY' ? 'Day' : 'Night';
+
+    const draftStep = match.draftSequence.steps.find(
+        (s) => s.order === match.currentDraftStep,
+    );
+
     const mainEmbed = new EmbedBuilder()
         .setAuthor({ name: `Match #${match.id}`, iconURL: guild.iconURL()! })
         .addFields(teamsFields)
+        .addFields([
+            { name: 'Map', value: `${mapName} ${mapVariantName}` },
+            {
+                name: 'Current Step',
+                value: `Team ${match.currentDraftTeam + 1} ${draftStep?.type}`,
+            },
+        ])
         .setTimestamp();
 
     const meleeButton = new ButtonBuilder()
@@ -168,8 +184,31 @@ export async function sendDraftUI(
         });
 
         selectCollector.on('collect', async (i) => {
-            console.log(i);
-            // TODO: pick/ban depending on current draft step
+            if (i.member.id !== captain?.user.userDiscordId) {
+                i.reply({
+                    content: 'You are not captain!',
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
+
+            switch (i.customId) {
+                case 'meleeList':
+                case 'rangedList':
+                case 'supportList':
+                    if (match.currentDraftTeam !== matchingTeam.order) {
+                        i.reply({
+                            content: 'It is not your turn to draft!',
+                            flags: MessageFlags.Ephemeral,
+                        });
+                        return;
+                    }
+
+                    // TODO: check if champ is pick/bannable
+                    // TODO: pick/ban depending on current draft step
+                    // TODO: refresh draft UI (by calling the funcion again lol!)
+                    break;
+            }
         });
     }
 }

@@ -66,9 +66,13 @@ model Queue {
 }
 
 model Match {
-    id               Int                @id @default(autoincrement())
-    teams            MatchTeam[]
-    state            MatchState         @default(NEW)
+    id    Int         @id @default(autoincrement())
+    teams MatchTeam[]
+    state MatchState  @default(NEW)
+
+    map   MapData @relation(fields: [mapId], references: [id])
+    mapId Int
+
     draftSequence    MatchDraftSequence @relation(fields: [draftSequenceId], references: [id])
     draftSequenceId  Int
     currentDraftStep Int                @default(0)
@@ -153,6 +157,8 @@ model MapData {
     map     Map
     variant MapVariant
     weight  Int
+
+    matches Match[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
