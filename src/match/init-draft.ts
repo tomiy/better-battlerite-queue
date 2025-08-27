@@ -5,12 +5,16 @@ import {
     PermissionsBitField,
     TextChannel,
 } from 'discord.js';
-import { MatchUser, User } from '../../.prisma';
+import { MatchUser, User, Guild as dbGuild } from '../../.prisma';
 import { categoryChannelName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-import { buildDraftUI } from './build-draft-ui';
+import { sendDraftUI } from './build-draft-ui';
 
-export async function initDraft(matchId: number, guild: Guild) {
+export async function initDraft(
+    matchId: number,
+    guild: Guild,
+    dbGuild: dbGuild,
+) {
     DebugUtils.debug(`[Init Draft] initializing draft for match ${matchId}`);
 
     const match = await prisma.match.findFirstOrThrow({
@@ -78,10 +82,5 @@ export async function initDraft(matchId: number, guild: Guild) {
         },
     });
 
-    const draftUI = buildDraftUI(match, guild);
-
-    for (const tc of teamChannels) {
-        DebugUtils.debug(`Sending draft UI to channel ${tc.name}`);
-        await tc.send(draftUI);
-    }
+    await sendDraftUI(match.id, guild, dbGuild, teamChannels);
 }

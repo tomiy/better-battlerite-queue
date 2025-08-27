@@ -152,7 +152,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         throw new Error('[Match Creation] Could not remove users from queue!');
     }
 
-    await initDraft(match.id, guild);
+    await initDraft(match.id, guild, dbGuild);
 }
 
 function permuteMatchUsers(a: QueueWithUser[]) {
