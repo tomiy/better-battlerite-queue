@@ -51,20 +51,20 @@ export async function initDraft(matchId: number, guild: Guild) {
     };
 
     const teamChannels: TextChannel[] = [];
-    for (const team in match.teams) {
+    for (const team of match.teams) {
         const teamChannel = await guild.channels.create({
-            name: `${matchId}-team-${team + 1}`,
+            name: `match-${matchId}-team-${team.order + 1}`,
             parent: categoryChannel,
             type: ChannelType.GuildText,
             permissionOverwrites: mapTeamUsersToPermissionOverwrites(
-                match.teams[team].users,
+                team.users,
             ),
         });
 
         teamChannels.push(teamChannel);
 
         await prisma.matchTeam.update({
-            where: { id: match.teams[team].id },
+            where: { id: team.id },
             data: {
                 teamChannel: teamChannel.id,
             },
@@ -80,5 +80,8 @@ export async function initDraft(matchId: number, guild: Guild) {
 
     const draftUI = buildDraftUI(match, guild);
 
-    teamChannels.forEach(async (tc) => await tc.send(draftUI));
+    for (const tc of teamChannels) {
+        DebugUtils.debug(`Sending draft UI to channel ${tc.name}`);
+        await tc.send(draftUI);
+    }
 }

@@ -28,7 +28,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
 
     if (queuedUsers.length < matchSize) {
         DebugUtils.debug(
-            '[Match Creation] not enough users in queue to create match',
+            '[Match Creation] Not enough users in queue to create match',
         );
         return;
     }
@@ -46,12 +46,12 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         });
     });
 
-    const firstQueuedUsersByRegion = usersByRegion
-        .values()
-        .find((u) => u.length >= matchSize);
+    const firstQueuedUsersByRegion = [...usersByRegion.values()].find(
+        (u) => u.length >= matchSize,
+    );
     if (!firstQueuedUsersByRegion) {
         DebugUtils.debug(
-            '[Match Creation] not enough users grouped by region to create match',
+            '[Match Creation] Not enough users grouped by region to create match',
         );
         return;
     }
@@ -86,6 +86,8 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         }
     }
 
+    DebugUtils.debug('[Match Creation] Found best config, creating match...');
+
     const draftSequence = await prisma.matchDraftSequence.findFirstOrThrow({
         where: { name: defaultDraftSequenceName },
         include: { steps: { orderBy: { order: 'asc' } } },
@@ -104,16 +106,16 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     });
 
     if (!match) {
-        throw new Error('[Match Creation] could not create match!');
+        throw new Error('[Match Creation] Could not create match!');
     }
 
     const teamsUserData: Prisma.MatchUserCreateManyInput[] = [];
-    bestConfig.teams.forEach((team, i) => {
+    bestConfig.teams.forEach((team, teamIndex) => {
         teamsUserData.push(
-            ...team.map((t) => ({
-                teamId: match.teams[i].id,
-                userId: t.userId,
-                captain: i === 0,
+            ...team.map((teamUser, teamUserIndex) => ({
+                teamId: match.teams[teamIndex].id,
+                userId: teamUser.userId,
+                captain: teamUserIndex === 0,
             })),
         );
     });
@@ -124,7 +126,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     });
 
     if (!matchUserData) {
-        throw new Error('[Match Creation] could not create match users!');
+        throw new Error('[Match Creation] Could not create match users!');
     }
 
     for (const matchUser of matchUserData) {
