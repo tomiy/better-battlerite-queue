@@ -1,5 +1,10 @@
 import { Guild } from 'discord.js';
-import { prisma } from '../config';
+import { DraftStep } from '../../.prisma';
+import {
+    defaultDraftSequence,
+    defaultDraftSequenceName,
+    prisma,
+} from '../config';
 import { getDefaultMappings as getDefaultChampionMappings } from '../data/championMappings';
 import { getDefaultMappings as getDefaultMapMappings } from '../data/mapMappings';
 import { DebugUtils } from '../debug-utils';
@@ -50,6 +55,40 @@ export async function syncDefaultData(guild: Guild) {
 
         DebugUtils.debug(
             `[Sync default data] Successfully synced default champion data for guild ${guild.id}`,
+        );
+    }
+
+    const anyDraftSequence = await prisma.matchDraftSequence.findFirst();
+
+    if (!anyDraftSequence) {
+        DebugUtils.debug(
+            `[Sync default data] Syncing default draft sequence for guild ${guild.id}`,
+        );
+
+        const draftSteps = defaultDraftSequence.split('').map((s, i) => ({
+            type: s === 'B' ? DraftStep.BAN : DraftStep.PICK,
+            order: i,
+        }));
+
+        const draftSequence = await prisma.matchDraftSequence.create({
+            data: {
+                name: defaultDraftSequenceName,
+                steps: {
+                    createMany: {
+                        data: draftSteps,
+                    },
+                },
+            },
+        });
+
+        if (!draftSequence) {
+            throw new Error(
+                '[Sync default data] Could not create default draft sequence',
+            );
+        }
+
+        DebugUtils.debug(
+            `[Sync default data] Successfully synced default draft sequence for guild ${guild.id}`,
         );
     }
 }

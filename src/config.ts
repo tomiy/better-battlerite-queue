@@ -19,4 +19,7 @@ export const categoryChannelName = 'Better Battlerite Queue';
 export const botCommandsChannelName = 'bbq-bot-commands';
 export const queueChannelName = 'bbq-queue';
 
+export const defaultDraftSequence = 'BBPPBP';
+export const defaultDraftSequenceName = 'DEFAULT';
+
 export const prisma = new PrismaClient();

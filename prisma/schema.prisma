@@ -36,11 +36,11 @@ model User {
     guildId       Int
     inGameName    String
     description   String?
-    region        UserRegion[]
+    regions       UserRegion[]
     elo           Int          @default(1000)
 
-    queue     Queue?
-    MatchUser MatchUser[]
+    queue      Queue?
+    matchUsers MatchUser[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -51,6 +51,9 @@ model UserRegion {
     user   User   @relation(fields: [userId], references: [id])
     userId Int
     region Region
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Queue {
@@ -63,33 +66,64 @@ model Queue {
 }
 
 model Match {
-    id    Int         @id @default(autoincrement())
-    teams MatchTeam[]
-    state MatchState  @default(NEW)
+    id               Int                @id @default(autoincrement())
+    teams            MatchTeam[]
+    state            MatchState         @default(NEW)
+    draftSequence    MatchDraftSequence @relation(fields: [draftSequenceId], references: [id])
+    draftSequenceId  Int
+    currentDraftStep Int                @default(0)
+    currentDraftTeam Int                @default(0)
 
-    team1Channel String?
-    team2Channel String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model MatchDraftSequence {
+    id      Int              @id @default(autoincrement())
+    name    String
+    steps   MatchDraftStep[]
+    matches Match[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model MatchDraftStep {
+    id    Int       @id @default(autoincrement())
+    type  DraftStep
+    order Int
+
+    sequence   MatchDraftSequence @relation(fields: [sequenceId], references: [id])
+    sequenceId Int
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
 model MatchTeam {
-    id      Int         @id @default(autoincrement())
-    match   Match       @relation(fields: [matchId], references: [id])
+    id      Int   @id @default(autoincrement())
+    match   Match @relation(fields: [matchId], references: [id])
     matchId Int
-    users   MatchUser[]
+
+    order Int
+
+    bans  ChampionData[] @relation(name: "matchTeamBans")
+    picks ChampionData[] @relation(name: "matchTeamPicks")
+
+    users       MatchUser[]
+    teamChannel String?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
 model MatchUser {
-    id     Int       @id @default(autoincrement())
-    user   User      @relation(fields: [userId], references: [id])
-    userId Int
-    team   MatchTeam @relation(fields: [teamId], references: [id])
-    teamId Int
+    id      Int       @id @default(autoincrement())
+    user    User      @relation(fields: [userId], references: [id])
+    userId  Int
+    team    MatchTeam @relation(fields: [teamId], references: [id])
+    teamId  Int
+    captain Boolean
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -103,6 +137,12 @@ model ChampionData {
     champion     Champion
     type         ChampionType
     restrictions String
+
+    matchTeamBans  MatchTeam[] @relation(name: "matchTeamBans")
+    matchTeamPicks MatchTeam[] @relation(name: "matchTeamPicks")
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model MapData {
@@ -113,6 +153,9 @@ model MapData {
     map     Map
     variant MapVariant
     weight  Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 enum MatchState {
@@ -120,6 +163,11 @@ enum MatchState {
     DRAFT
     ONGOING
     FINISHED
+}
+
+enum DraftStep {
+    BAN
+    PICK
 }
 
 enum Region {

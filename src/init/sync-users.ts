@@ -96,13 +96,13 @@ export async function syncUsers(guild: Guild) {
             where: { state: { not: 'FINISHED' } },
         });
 
-        for (const finishedMatch of finishedMatches) {
-            if (finishedMatch.team1Channel) {
-                await guild.channels.delete(finishedMatch.team1Channel);
-            }
+        const finishedMatchesTeams = await prisma.matchTeam.findMany({
+            where: { matchId: { in: finishedMatches.map((fm) => fm.id) } },
+        });
 
-            if (finishedMatch.team2Channel) {
-                await guild.channels.delete(finishedMatch.team2Channel);
+        for (const finishedMatchTeam of finishedMatchesTeams) {
+            if (finishedMatchTeam.teamChannel) {
+                await guild.channels.delete(finishedMatchTeam.teamChannel);
             }
         }
 

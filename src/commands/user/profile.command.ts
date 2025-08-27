@@ -22,7 +22,7 @@ const data = new SlashCommandBuilder()
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const initialUser = await prisma.user.findFirst({
         where: { userDiscordId: interaction.user.id, guildId: dbGuild.id },
-        include: { region: true },
+        include: { regions: true },
     });
 
     if (!initialUser) {

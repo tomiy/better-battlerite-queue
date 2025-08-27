@@ -1,23 +1,29 @@
 import { Guild } from 'discord.js';
 import { Guild as dbGuild, Prisma, Region } from '../../.prisma';
-import { prisma } from '../config';
+import { defaultDraftSequenceName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { initDraft } from './init-draft';
 
 const validRegionStrings = Object.values(Region);
 
 type QueueWithUser = Prisma.QueueGetPayload<{
-    include: { user: { include: { region: true } } };
+    include: { user: { include: { regions: true } } };
 }>;
 
 const matchSize = 6;
 const teamSize = 3;
 
 export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
+    if (matchSize % teamSize) {
+        throw new Error(
+            '[Match Creation] Invalid config, match size has to be a multiple of team size',
+        );
+    }
+
     const queuedUsers: QueueWithUser[] = await prisma.queue.findMany({
         where: { user: { guildId: dbGuild.id } },
         orderBy: { createdAt: 'asc' },
-        include: { user: { include: { region: true } } },
+        include: { user: { include: { regions: true } } },
     });
 
     if (queuedUsers.length < matchSize) {
@@ -34,7 +40,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         }
 
         queuedUsers.forEach((queuedUser) => {
-            if (queuedUser.user.region.map((r) => r.region).includes(region)) {
+            if (queuedUser.user.regions.map((r) => r.region).includes(region)) {
                 usersByRegion.get(region)?.push(queuedUser);
             }
         });
@@ -55,51 +61,65 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
 
     const bestConfig: {
         diff: number;
-        team1: QueueWithUser[];
-        team2: QueueWithUser[];
+        teams: QueueWithUser[][];
     } = {
         diff: Infinity,
-        team1: [],
-        team2: [],
+        teams: [],
     };
 
     for (const matchUserPermutation of matchUsersPermutations) {
-        const team1 = matchUserPermutation.splice(0, teamSize);
-        const team2 = matchUserPermutation;
+        const teams = [];
+        for (let i = 0; i < matchUserPermutation.length; i += teamSize) {
+            teams.push(matchUserPermutation.slice(i, i + teamSize));
+        }
+
+        const teamsAverageElo = teams.map(
+            (t) => t.reduce((s, t) => s + t.user.elo, 0) / t.length,
+        );
 
         const diff =
-            team1.reduce((s, t) => s + t.user.elo, 0) / team1.length -
-            team2.reduce((s, t) => s + t.user.elo, 0) / team2.length;
+            Math.max(...teamsAverageElo) - Math.min(...teamsAverageElo);
 
         if (diff < bestConfig.diff) {
             bestConfig.diff = diff;
-            bestConfig.team1 = team1;
-            bestConfig.team2 = team2;
+            bestConfig.teams = teams;
         }
     }
 
+    const draftSequence = await prisma.matchDraftSequence.findFirstOrThrow({
+        where: { name: defaultDraftSequenceName },
+        include: { steps: { orderBy: { order: 'asc' } } },
+    });
+
     const match = await prisma.match.create({
         data: {
-            teams: { createMany: { data: [{}, {}] } },
+            teams: {
+                createMany: {
+                    data: bestConfig.teams.map((_, i) => ({ order: i })),
+                },
+            },
+            draftSequenceId: draftSequence.id,
         },
-        include: { teams: { include: { users: { include: { user: true } } } } },
+        include: { teams: true },
     });
 
     if (!match) {
         throw new Error('[Match Creation] could not create match!');
     }
 
-    const team1UserData = bestConfig.team1.map((t) => ({
-        teamId: match.teams[0].id,
-        userId: t.userId,
-    }));
-    const team2UserData = bestConfig.team2.map((t) => ({
-        teamId: match.teams[1].id,
-        userId: t.userId,
-    }));
+    const teamsUserData: Prisma.MatchUserCreateManyInput[] = [];
+    bestConfig.teams.forEach((team, i) => {
+        teamsUserData.push(
+            ...team.map((t) => ({
+                teamId: match.teams[i].id,
+                userId: t.userId,
+                captain: i === 0,
+            })),
+        );
+    });
 
     const matchUserData = await prisma.matchUser.createManyAndReturn({
-        data: [...team1UserData, ...team2UserData],
+        data: teamsUserData,
         include: { user: true },
     });
 
@@ -130,10 +150,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         throw new Error('[Match Creation] Could not remove users from queue!');
     }
 
-    match.teams[0].users = matchUserData.splice(0, teamSize);
-    match.teams[1].users = matchUserData;
-
-    await initDraft(match, guild);
+    await initDraft(match.id, guild);
 }
 
 function permuteMatchUsers(a: QueueWithUser[]) {

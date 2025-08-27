@@ -3,19 +3,23 @@ import {
     ChannelType,
     Guild,
     PermissionsBitField,
+    TextChannel,
 } from 'discord.js';
-import { MatchUser, Prisma, User } from '../../.prisma';
+import { MatchUser, User } from '../../.prisma';
 import { categoryChannelName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-import { buildDraftEmbed } from './build-draft-embed';
+import { buildDraftUI } from './build-draft-ui';
 
-export async function initDraft(
-    match: Prisma.MatchGetPayload<{
-        include: { teams: { include: { users: { include: { user: true } } } } };
-    }>,
-    guild: Guild,
-) {
-    DebugUtils.debug(`[Init Draft] initializing draft for match ${match.id}`);
+export async function initDraft(matchId: number, guild: Guild) {
+    DebugUtils.debug(`[Init Draft] initializing draft for match ${matchId}`);
+
+    const match = await prisma.match.findFirstOrThrow({
+        where: { id: matchId },
+        include: {
+            draftSequence: true,
+            teams: { include: { users: { include: { user: true } } } },
+        },
+    });
 
     const categoryChannel = guild.channels.cache.find(
         (c) => c.name === categoryChannelName,
@@ -46,35 +50,35 @@ export async function initDraft(
         ];
     };
 
-    const team1Channel = await guild.channels.create({
-        name: `${match.id}-team-1`,
-        parent: categoryChannel,
-        type: ChannelType.GuildText,
-        permissionOverwrites: mapTeamUsersToPermissionOverwrites(
-            match.teams[0].users,
-        ),
-    });
+    const teamChannels: TextChannel[] = [];
+    for (const team in match.teams) {
+        const teamChannel = await guild.channels.create({
+            name: `${matchId}-team-${team + 1}`,
+            parent: categoryChannel,
+            type: ChannelType.GuildText,
+            permissionOverwrites: mapTeamUsersToPermissionOverwrites(
+                match.teams[team].users,
+            ),
+        });
 
-    const team2Channel = await guild.channels.create({
-        name: `${match.id}-team-2`,
-        parent: categoryChannel,
-        type: ChannelType.GuildText,
-        permissionOverwrites: mapTeamUsersToPermissionOverwrites(
-            match.teams[1].users,
-        ),
-    });
+        teamChannels.push(teamChannel);
+
+        await prisma.matchTeam.update({
+            where: { id: match.teams[team].id },
+            data: {
+                teamChannel: teamChannel.id,
+            },
+        });
+    }
 
     await prisma.match.update({
         where: { id: match.id },
         data: {
             state: 'DRAFT',
-            team1Channel: team1Channel.id,
-            team2Channel: team2Channel.id,
         },
     });
 
-    const draftEmbed = buildDraftEmbed(match, guild);
+    const draftUI = buildDraftUI(match, guild);
 
-    await team1Channel.send({ embeds: [draftEmbed] });
-    await team2Channel.send({ embeds: [draftEmbed] });
+    teamChannels.forEach(async (tc) => await tc.send(draftUI));
 }
