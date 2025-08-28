@@ -18,6 +18,7 @@ export const config = {
 export const categoryChannelName = 'Better Battlerite Queue';
 export const botCommandsChannelName = 'bbq-bot-commands';
 export const queueChannelName = 'bbq-queue';
+export const matchHistoryChannelName = 'bbq-match-history';
 
 export const defaultDraftSequence = 'BBPPBP';
 export const defaultDraftSequenceName = 'DEFAULT';

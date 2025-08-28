@@ -8,7 +8,7 @@ import {
 import { MatchUser, User, Guild as dbGuild } from '../../.prisma';
 import { categoryChannelName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-import { sendDraftUI } from './build-draft-ui';
+import { sendDraftUI } from './send-draft-ui';
 
 export async function initDraft(
     matchId: number,

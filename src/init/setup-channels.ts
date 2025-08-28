@@ -8,6 +8,7 @@ import {
 import {
     botCommandsChannelName,
     categoryChannelName,
+    matchHistoryChannelName,
     prisma,
     queueChannelName,
 } from '../config';
@@ -30,6 +31,11 @@ export async function setupChannels(guild: Guild) {
         let queueChannel = guild.channels.cache.find(
             (c) =>
                 c.name === queueChannelName &&
+                c.parent?.name === categoryChannelName,
+        ) as TextChannel | undefined;
+        let matchHistoryChannel = guild.channels.cache.find(
+            (c) =>
+                c.name === matchHistoryChannelName &&
                 c.parent?.name === categoryChannelName,
         ) as TextChannel | undefined;
 
@@ -102,11 +108,41 @@ export async function setupChannels(guild: Guild) {
 
         await queueChannel.bulkDelete(100);
 
+        if (!matchHistoryChannel) {
+            DebugUtils.debug(
+                `[Setup channels] Creating channel ${matchHistoryChannelName}`,
+            );
+
+            matchHistoryChannel = await guild.channels.create({
+                name: matchHistoryChannelName,
+                parent: categoryChannel,
+                type: ChannelType.GuildText,
+                permissionOverwrites: [
+                    {
+                        id: guild.id,
+                        deny: [PermissionsBitField.Flags.SendMessages],
+                    },
+                    {
+                        id: guild.members.me?.id || '',
+                        allow: [PermissionsBitField.Flags.SendMessages],
+                    },
+                ],
+            });
+
+            if (!matchHistoryChannel) {
+                DebugUtils.error(
+                    '[Setup channels] Could not create match history channel',
+                );
+                return;
+            }
+        }
+
         await prisma.guild.update({
             where: { guildDiscordId: guild.id },
             data: {
                 botCommandsChannel: botCommandsChannel.id,
                 queueChannel: queueChannel.id,
+                matchHistoryChannel: matchHistoryChannel.id,
             },
         });
 

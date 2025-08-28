@@ -12,15 +12,16 @@ datasource db {
 }
 
 model Guild {
-    id                 Int     @id @default(autoincrement())
-    guildDiscordId     String  @unique
-    botCommandsChannel String?
-    queueChannel       String?
-    botModRole         String?
-    registeredRole     String?
-    matchRole          String?
-    queueRole          String?
-    users              User[]
+    id                  Int     @id @default(autoincrement())
+    guildDiscordId      String  @unique
+    botCommandsChannel  String?
+    queueChannel        String?
+    matchHistoryChannel String?
+    botModRole          String?
+    registeredRole      String?
+    matchRole           String?
+    queueRole           String?
+    users               User[]
 
     mapData      MapData[]
     championData ChampionData[]
@@ -76,7 +77,6 @@ model Match {
     draftSequence    MatchDraftSequence @relation(fields: [draftSequenceId], references: [id])
     draftSequenceId  Int
     currentDraftStep Int                @default(0)
-    currentDraftTeam Int                @default(0)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
