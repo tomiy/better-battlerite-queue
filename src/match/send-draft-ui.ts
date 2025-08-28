@@ -8,11 +8,12 @@ import {
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import {
-    buildMatchButtons,
+    buildDraftButtons,
+    buildDraftSelectionLists,
     buildMatchEmbed,
-    buildMatchSelectionLists,
 } from './build-match-ui';
 import { checkCanDraft, processBan, processPick } from './draft-functions';
+import { sendReportUI } from './send-report.ui';
 
 export async function sendDraftUI(
     matchId: number,
@@ -38,25 +39,7 @@ export async function sendDraftUI(
     const totalSteps = match.draftSequence.steps.length * match.teams.length;
 
     if (match.currentDraftStep >= totalSteps) {
-        prisma.match.update({
-            where: { id: matchId },
-            data: { state: 'ONGOING' },
-        });
-
-        const mainEmbed = buildMatchEmbed(match, guild);
-
-        for (const tc of teamChannels) {
-            tc.send({ embeds: [mainEmbed] });
-        }
-
-        const matchHistoryChannel = guild.channels.resolve(
-            dbGuild.matchHistoryChannel || '',
-        );
-
-        if (matchHistoryChannel instanceof TextChannel) {
-            matchHistoryChannel.send({ embeds: [mainEmbed] });
-        }
-
+        sendReportUI(match, guild, dbGuild, teamChannels);
         return;
     }
 
@@ -86,7 +69,7 @@ export async function sendDraftUI(
         draftStep,
     );
 
-    const categoryButtonsRow = buildMatchButtons();
+    const categoryButtonsRow = buildDraftButtons();
 
     const draftUIMessages: Message[] = [];
 
@@ -137,7 +120,7 @@ export async function sendDraftUI(
                 return;
             }
 
-            const row = buildMatchSelectionLists(
+            const row = buildDraftSelectionLists(
                 match,
                 matchingTeam,
                 draftStep,

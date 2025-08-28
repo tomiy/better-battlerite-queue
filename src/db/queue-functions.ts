@@ -10,7 +10,7 @@ export async function joinQueue(
 ) {
     const matchUser = await prisma.match.findFirst({
         where: {
-            state: { not: 'FINISHED' },
+            state: { notIn: ['DROPPED', 'FINISHED'] },
             teams: { some: { users: { some: { userId: user.id } } } },
         },
     });

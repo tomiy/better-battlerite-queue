@@ -73,10 +73,54 @@ export function buildMatchEmbed(
         { name: 'Map', value: `${mapName} ${mapVariantName}` },
     ];
 
-    if (match.state === 'DRAFT' && currentDraftTeam && draftStep) {
+    if (
+        match.state === 'DRAFT' &&
+        currentDraftTeam !== undefined &&
+        draftStep !== undefined
+    ) {
         infoFields.push({
             name: 'Current Step',
             value: `Team ${currentDraftTeam + 1} ${draftStep.type}`,
+        });
+    }
+
+    const allRestrictions: string[] = [];
+    match.teams.forEach((t) => {
+        t.picks.forEach((p) => {
+            if (p.restrictions) {
+                allRestrictions.push(
+                    `${championToChampionName.get(p.champion)}: ${p.restrictions}`,
+                );
+            }
+        });
+    });
+    const uniqueRestrictions = [...new Set(allRestrictions)];
+
+    const footerFields: APIEmbedField[] = [
+        {
+            name: 'Restrictions',
+            value: uniqueRestrictions.join('\n'),
+        },
+    ];
+
+    if (match.state === 'ONGOING') {
+        const matchUsers = match.teams.flatMap((t) => t.users);
+        const winReports = Object.groupBy(
+            matchUsers,
+            (u) => u.teamWinReport || -1,
+        );
+        const dropReportCount = matchUsers
+            .map((u) => u.dropReport)
+            .filter((r) => r === true).length;
+
+        const reportStrings: string[] = match.teams.map(
+            (t) => `Team ${t.order + 1}: ${winReports[t.order]?.length}`,
+        );
+        reportStrings.push(`Drop: ${dropReportCount}`);
+
+        footerFields.push({
+            name: 'Match Reports',
+            value: reportStrings.join('\n'),
         });
     }
 
@@ -88,10 +132,11 @@ export function buildMatchEmbed(
         .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
         .addFields(teamPicksFields)
         .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
+        .addFields(footerFields)
         .setTimestamp();
 }
 
-export function buildMatchButtons() {
+export function buildDraftButtons() {
     const meleeButton = new ButtonBuilder()
         .setCustomId('meleeButton')
         .setLabel('Melee')
@@ -112,7 +157,29 @@ export function buildMatchButtons() {
         .addComponents(supportButton);
 }
 
-export function buildMatchSelectionLists(
+export function buildReportButtons(teams: number) {
+    const buttons: ButtonBuilder[] = [];
+
+    for (let i = 0; i < teams; i++) {
+        buttons.push(
+            new ButtonBuilder()
+                .setCustomId(`reportButtonTeam${i}`)
+                .setLabel(`Team ${i + 1}`)
+                .setStyle(ButtonStyle.Primary),
+        );
+    }
+
+    const dropButton = new ButtonBuilder()
+        .setCustomId('reportButtonDrop')
+        .setLabel('Drop')
+        .setStyle(ButtonStyle.Danger);
+
+    return new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(...buttons)
+        .addComponents(dropButton);
+}
+
+export function buildDraftSelectionLists(
     match: Prisma.MatchGetPayload<{
         include: { teams: { include: { bans: true; picks: true } } };
     }>,

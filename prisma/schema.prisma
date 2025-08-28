@@ -78,6 +78,8 @@ model Match {
     draftSequenceId  Int
     currentDraftStep Int                @default(0)
 
+    teamWin Int?
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -129,6 +131,9 @@ model MatchUser {
     teamId  Int
     captain Boolean
 
+    teamWinReport Int?
+    dropReport    Boolean @default(false)
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -169,6 +174,7 @@ enum MatchState {
     DRAFT
     ONGOING
     FINISHED
+    DROPPED
 }
 
 enum DraftStep {

@@ -26,6 +26,23 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         include: { user: { include: { regions: true } } },
     });
 
+    const ongoingMatches = await prisma.match.findMany({
+        where: { state: { notIn: ['DROPPED', 'FINISHED'] } },
+        include: { teams: { include: { users: true } } },
+    });
+
+    const matchesUserIds = ongoingMatches.flatMap((m) =>
+        m.teams.flatMap((t) => t.users.map((u) => u.userId)),
+    );
+    const queuedUserIds = queuedUsers.map((q) => q.userId);
+
+    if (matchesUserIds.some((u) => queuedUserIds.includes(u))) {
+        DebugUtils.debug(
+            '[Match Creation] Users in queue and match at the same time, this could be due to multiple quick queue interactions',
+        );
+        return;
+    }
+
     if (queuedUsers.length < matchSize) {
         DebugUtils.debug(
             '[Match Creation] Not enough users in queue to create match',
@@ -183,6 +200,7 @@ function permuteMatchUsers(a: QueueWithUser[]) {
 
     return result;
 }
+
 async function selectRandomMap(dbGuild: dbGuild) {
     const maps = await prisma.mapData.findMany({
         where: { guildId: dbGuild.id },

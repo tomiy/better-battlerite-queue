@@ -89,11 +89,11 @@ export async function syncUsers(guild: Guild) {
             DebugUtils.debug('[Sync users] Purged old matched users');
         }
 
-        DebugUtils.debug('[Sync users] Closing old matches...');
+        DebugUtils.debug('[Sync users] Dropping old matches...');
 
         const finishedMatches = await prisma.match.updateManyAndReturn({
-            data: { state: 'FINISHED' },
-            where: { state: { not: 'FINISHED' } },
+            where: { state: { notIn: ['DROPPED', 'FINISHED'] } },
+            data: { state: 'DROPPED' },
         });
 
         const finishedMatchesTeams = await prisma.matchTeam.findMany({
@@ -106,7 +106,7 @@ export async function syncUsers(guild: Guild) {
             }
         }
 
-        DebugUtils.debug('[Sync users] Closed old matches');
+        DebugUtils.debug('[Sync users] Dropped old matches');
 
         DebugUtils.debug(
             `[Sync users] Successfully synced users for guild ${guild.id}`,

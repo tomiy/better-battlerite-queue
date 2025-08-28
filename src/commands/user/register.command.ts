@@ -95,6 +95,14 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                     flags: MessageFlags.Ephemeral,
                 });
             }
+        } else {
+            await interaction.reply({
+                content: `Something went wrong with the registration modal :/`,
+                flags: MessageFlags.Ephemeral,
+            });
+            DebugUtils.error(
+                `[Register] Something went wrong with the registration modal`,
+            );
         }
     } catch (e) {
         DebugUtils.error(`[Register] Timeout: ${e}`);
