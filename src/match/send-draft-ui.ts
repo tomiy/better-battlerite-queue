@@ -1,4 +1,10 @@
-import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
+import {
+    ComponentType,
+    Guild,
+    Message,
+    TextChannel,
+    userMention,
+} from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import {
@@ -37,27 +43,18 @@ export async function sendDraftUI(
             data: { state: 'ONGOING' },
         });
 
-        if (match.currentDraftStep >= totalSteps) {
-            prisma.match.update({
-                where: { id: matchId },
-                data: { state: 'ONGOING' },
-            });
+        const mainEmbed = buildMatchEmbed(match, guild);
 
-            const mainEmbed = buildMatchEmbed(match, guild);
+        for (const tc of teamChannels) {
+            tc.send({ embeds: [mainEmbed] });
+        }
 
-            for (const tc of teamChannels) {
-                tc.send({ embeds: [mainEmbed] });
-            }
+        const matchHistoryChannel = guild.channels.resolve(
+            dbGuild.matchHistoryChannel || '',
+        );
 
-            const matchHistoryChannel = guild.channels.resolve(
-                dbGuild.matchHistoryChannel || '',
-            );
-
-            if (matchHistoryChannel instanceof TextChannel) {
-                matchHistoryChannel.send({ embeds: [mainEmbed] });
-            }
-
-            return;
+        if (matchHistoryChannel instanceof TextChannel) {
+            matchHistoryChannel.send({ embeds: [mainEmbed] });
         }
 
         return;
@@ -112,8 +109,13 @@ export async function sendDraftUI(
             embeds: [mainEmbed],
             components: [categoryButtonsRow],
         });
-
         draftUIMessages.push(draftUIMessage);
+
+        if (currentDraftTeam === matchingTeam.order) {
+            await tc.send({
+                content: `${userMention(captain.user.userDiscordId)} it's your turn to draft!`,
+            });
+        }
 
         const buttonCollector = draftUIMessage.createMessageComponentCollector({
             componentType: ComponentType.Button,
@@ -124,7 +126,14 @@ export async function sendDraftUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
-            if (!checkCanDraft(i, captain, currentDraftTeam, matchingTeam)) {
+            if (
+                !(await checkCanDraft(
+                    i,
+                    captain,
+                    currentDraftTeam,
+                    matchingTeam,
+                ))
+            ) {
                 return;
             }
 
@@ -149,7 +158,14 @@ export async function sendDraftUI(
         });
 
         selectCollector.on('collect', async (i) => {
-            if (!checkCanDraft(i, captain, currentDraftTeam, matchingTeam)) {
+            if (
+                !(await checkCanDraft(
+                    i,
+                    captain,
+                    currentDraftTeam,
+                    matchingTeam,
+                ))
+            ) {
                 return;
             }
 
