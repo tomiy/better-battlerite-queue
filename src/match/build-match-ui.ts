@@ -1,140 +1,12 @@
 import {
     ActionRowBuilder,
-    APIEmbedField,
     ButtonBuilder,
     ButtonStyle,
-    EmbedBuilder,
-    Guild,
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
-    userMention,
 } from 'discord.js';
 import { ChampionData, MatchDraftStep, Prisma } from '../../.prisma';
 import { championToChampionName } from '../data/championMappings';
-import { maptoMapName } from '../data/mapMappings';
-
-export function buildMatchEmbed(
-    match: Prisma.MatchGetPayload<{
-        include: {
-            map: true;
-            teams: {
-                include: {
-                    users: { include: { user: true } };
-                    bans: true;
-                    picks: true;
-                };
-            };
-        };
-    }>,
-    guild: Guild,
-    currentDraftTeam?: number,
-    draftStep?: MatchDraftStep,
-): EmbedBuilder {
-    const teamsFields: APIEmbedField[] = match.teams.map((t) => {
-        const userMentions = t.users
-            .map(
-                (u) =>
-                    `${userMention(u.user.userDiscordId)} ${u.captain ? '- Captain' : ''}`,
-            )
-            .join('\n');
-        return {
-            name: `Team ${t.order + 1}`,
-            value: userMentions,
-            inline: true,
-        };
-    });
-
-    const teamBansFields: APIEmbedField[] = match.teams.map((t) => {
-        const teamBans = t.bans
-            .map((b) => championToChampionName.get(b.champion) || 'Unknown')
-            .join('\n');
-        return {
-            name: `Team ${t.order + 1} bans`,
-            value: teamBans,
-            inline: true,
-        };
-    });
-
-    const teamPicksFields: APIEmbedField[] = match.teams.map((t) => {
-        const teamPicks = t.picks
-            .map((p) => championToChampionName.get(p.champion) || 'Unknown')
-            .join('\n');
-        return {
-            name: `Team ${t.order + 1} picks`,
-            value: teamPicks,
-            inline: true,
-        };
-    });
-
-    const mapName = maptoMapName.get(match.map.map) || 'Unknown';
-    const mapVariantName = match.map.variant === 'DAY' ? 'Day' : 'Night';
-
-    const infoFields: APIEmbedField[] = [
-        { name: 'Map', value: `${mapName} ${mapVariantName}` },
-    ];
-
-    if (
-        match.state === 'DRAFT' &&
-        currentDraftTeam !== undefined &&
-        draftStep !== undefined
-    ) {
-        infoFields.push({
-            name: 'Current Step',
-            value: `Team ${currentDraftTeam + 1} ${draftStep.type}`,
-        });
-    }
-
-    const allRestrictions: string[] = [];
-    match.teams.forEach((t) => {
-        t.picks.forEach((p) => {
-            if (p.restrictions) {
-                allRestrictions.push(
-                    `${championToChampionName.get(p.champion)}: ${p.restrictions}`,
-                );
-            }
-        });
-    });
-    const uniqueRestrictions = [...new Set(allRestrictions)];
-
-    const footerFields: APIEmbedField[] = [
-        {
-            name: 'Restrictions',
-            value: uniqueRestrictions.join('\n'),
-        },
-    ];
-
-    if (match.state === 'ONGOING') {
-        const matchUsers = match.teams.flatMap((t) => t.users);
-        const winReports = Object.groupBy(
-            matchUsers,
-            (u) => u.teamWinReport || -1,
-        );
-        const dropReportCount = matchUsers
-            .map((u) => u.dropReport)
-            .filter((r) => r === true).length;
-
-        const reportStrings: string[] = match.teams.map(
-            (t) => `Team ${t.order + 1}: ${winReports[t.order]?.length}`,
-        );
-        reportStrings.push(`Drop: ${dropReportCount}`);
-
-        footerFields.push({
-            name: 'Match Reports',
-            value: reportStrings.join('\n'),
-        });
-    }
-
-    return new EmbedBuilder()
-        .setAuthor({ name: `Match #${match.id}`, iconURL: guild.iconURL()! })
-        .addFields(teamsFields)
-        .addFields(infoFields)
-        .addFields(teamBansFields)
-        .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
-        .addFields(teamPicksFields)
-        .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
-        .addFields(footerFields)
-        .setTimestamp();
-}
 
 export function buildDraftButtons() {
     const meleeButton = new ButtonBuilder()
@@ -187,22 +59,24 @@ export function buildDraftSelectionLists(
     draftStep: MatchDraftStep,
     champions: ChampionData[],
 ) {
-    const teamBans = team.bans.map((b) => b.id);
-    const teamPicks = team.picks.map((p) => p.id);
     const enemyTeams = match.teams.filter((t) => t.id !== team.id);
-    const enemyBans: number[] = [];
-    enemyTeams.forEach((et) => enemyBans.push(...et.bans.map((eb) => eb.id)));
-    const enemyPicks: number[] = [];
-    enemyTeams.forEach((et) => enemyPicks.push(...et.picks.map((ep) => ep.id)));
+    const enemyBans = enemyTeams.flatMap((et) => et.bans);
+    const enemyPicks = enemyTeams.flatMap((et) => et.picks);
 
     const canPick = (id: number) => {
+        const globalBans = [
+            ...team.bans.filter((tb) => tb.global),
+            ...enemyBans.filter((eb) => eb.global),
+        ];
         return (
             (draftStep.type === 'BAN' &&
-                !teamBans.includes(id) &&
-                !enemyPicks.includes(id)) ||
+                !team.bans.map((tb) => tb.id).includes(id) &&
+                !enemyPicks.map((ep) => ep.id).includes(id) &&
+                !globalBans.map((gb) => gb.id).includes(id)) ||
             (draftStep.type === 'PICK' &&
-                !teamPicks.includes(id) &&
-                !enemyBans.includes(id))
+                !team.picks.map((tp) => tp.id).includes(id) &&
+                !enemyBans.map((eb) => eb.id).includes(id) &&
+                !globalBans.map((gb) => gb.id).includes(id))
         );
     };
 

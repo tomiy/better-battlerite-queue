@@ -111,13 +111,12 @@ model MatchTeam {
     match   Match @relation(fields: [matchId], references: [id])
     matchId Int
 
-    order Int
-
-    bans  ChampionData[] @relation(name: "matchTeamBans")
-    picks ChampionData[] @relation(name: "matchTeamPicks")
-
+    order       Int
     users       MatchUser[]
     teamChannel String?
+
+    bans  MatchBan[]
+    picks MatchPick[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -138,6 +137,33 @@ model MatchUser {
     updatedAt DateTime @updatedAt
 }
 
+model MatchPick {
+    id         Int          @id @default(autoincrement())
+    champion   ChampionData @relation(fields: [championId], references: [id])
+    championId Int
+    draftOrder Int
+
+    matchTeam   MatchTeam @relation(fields: [matchTeamId], references: [id])
+    matchTeamId Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model MatchBan {
+    id         Int          @id @default(autoincrement())
+    champion   ChampionData @relation(fields: [championId], references: [id])
+    championId Int
+    draftOrder Int
+    global     Boolean      @default(false)
+
+    matchTeam   MatchTeam @relation(fields: [matchTeamId], references: [id])
+    matchTeamId Int
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
 model ChampionData {
     id      Int   @id @default(autoincrement())
     guild   Guild @relation(fields: [guildId], references: [id])
@@ -147,8 +173,8 @@ model ChampionData {
     type         ChampionType
     restrictions String
 
-    matchTeamBans  MatchTeam[] @relation(name: "matchTeamBans")
-    matchTeamPicks MatchTeam[] @relation(name: "matchTeamPicks")
+    matchPicks MatchPick[]
+    matchBans  MatchBan[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -178,6 +204,7 @@ enum MatchState {
 }
 
 enum DraftStep {
+    GLOBAL_BAN
     BAN
     PICK
 }

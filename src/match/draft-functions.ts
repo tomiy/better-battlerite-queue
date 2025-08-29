@@ -5,7 +5,13 @@ import {
     StringSelectMenuInteraction,
     TextChannel,
 } from 'discord.js';
-import { Match, MatchTeam, Prisma, Guild as dbGuild } from '../../.prisma';
+import {
+    Match,
+    MatchDraftStep,
+    MatchTeam,
+    Prisma,
+    Guild as dbGuild,
+} from '../../.prisma';
 import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
 import { sendDraftUI } from './send-draft-ui';
@@ -48,57 +54,48 @@ export async function sendNextStep(
 
     await sendDraftUI(match.id, guild, dbGuild, teamChannels);
 }
-export async function processPick(
-    matchingTeam: MatchTeam,
-    i: StringSelectMenuInteraction,
+
+export async function processDraftStep(
     match: Match,
+    team: MatchTeam,
+    step: MatchDraftStep,
+    i: StringSelectMenuInteraction,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
 ) {
-    const updated = await prisma.matchTeam.update({
-        where: { id: matchingTeam.id },
-        data: {
-            picks: {
-                connect: { id: parseInt(i.values[0]) },
+    let updated = null;
+    if (['BAN', 'GLOBAL_BAN'].includes(step.type)) {
+        updated = await prisma.matchTeam.update({
+            where: { id: team.id },
+            data: {
+                bans: {
+                    create: {
+                        global: step.type === 'GLOBAL_BAN',
+                        draftOrder: match.currentDraftStep,
+                        championId: parseInt(i.values[0]),
+                    },
+                },
             },
-        },
-    });
-
-    if (updated) {
-        tempReply(i, 'Pick registered!');
-
-        await sendNextStep(
-            match,
-            guild,
-            dbGuild,
-            teamChannels,
-            draftUIMessages,
-        );
+        });
     }
-}
-export async function processBan(
-    matchingTeam: MatchTeam,
-    i: StringSelectMenuInteraction,
-    match: Match,
-    guild: Guild,
-    dbGuild: dbGuild,
-    teamChannels: TextChannel[],
-    draftUIMessages: Message[],
-) {
-    const updated = await prisma.matchTeam.update({
-        where: { id: matchingTeam.id },
-        data: {
-            bans: {
-                connect: { id: parseInt(i.values[0]) },
+    if (step.type === 'PICK') {
+        updated = await prisma.matchTeam.update({
+            where: { id: team.id },
+            data: {
+                picks: {
+                    create: {
+                        draftOrder: match.currentDraftStep,
+                        championId: parseInt(i.values[0]),
+                    },
+                },
             },
-        },
-    });
+        });
+    }
 
     if (updated) {
-        tempReply(i, 'Ban registered!');
-
+        tempReply(i, 'Draft action registered!');
         await sendNextStep(
             match,
             guild,

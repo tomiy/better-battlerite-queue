@@ -1,5 +1,4 @@
 import { Guild } from 'discord.js';
-import { DraftStep } from '../../.prisma';
 import {
     defaultDraftSequence,
     defaultDraftSequenceName,
@@ -65,8 +64,8 @@ export async function syncDefaultData(guild: Guild) {
             `[Sync default data] Syncing default draft sequence for guild ${guild.id}`,
         );
 
-        const draftSteps = defaultDraftSequence.split('').map((s, i) => ({
-            type: s === 'B' ? DraftStep.BAN : DraftStep.PICK,
+        const draftSteps = defaultDraftSequence.map((step, i) => ({
+            type: step,
             order: i,
         }));
 

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { PrismaClient } from '../.prisma';
+import { DraftStep, PrismaClient } from '../.prisma';
 
 dotenv.config();
 
@@ -20,7 +20,14 @@ export const botCommandsChannelName = 'bbq-bot-commands';
 export const queueChannelName = 'bbq-queue';
 export const matchHistoryChannelName = 'bbq-match-history';
 
-export const defaultDraftSequence = 'BBPPBP';
+export const defaultDraftSequence = [
+    DraftStep.GLOBAL_BAN,
+    DraftStep.BAN,
+    DraftStep.PICK,
+    DraftStep.PICK,
+    DraftStep.BAN,
+    DraftStep.PICK,
+];
 export const defaultDraftSequenceName = 'DEFAULT';
 
 export const prisma = new PrismaClient();

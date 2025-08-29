@@ -2,7 +2,8 @@ import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
 import { Prisma, Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
-import { buildMatchEmbed, buildReportButtons } from './build-match-ui';
+import { buildMatchEmbed } from './build-match-embed';
+import { buildReportButtons } from './build-match-ui';
 
 export async function sendReportUI(
     match: Prisma.MatchGetPayload<{
@@ -11,8 +12,8 @@ export async function sendReportUI(
             teams: {
                 include: {
                     users: { include: { user: true } };
-                    bans: true;
-                    picks: true;
+                    bans: { include: { champion: true } };
+                    picks: { include: { champion: true } };
                 };
             };
         };
@@ -88,8 +89,8 @@ export async function sendReportUI(
                         teams: {
                             include: {
                                 users: { include: { user: true } },
-                                bans: true,
-                                picks: true,
+                                bans: { include: { champion: true } },
+                                picks: { include: { champion: true } },
                             },
                         },
                     },

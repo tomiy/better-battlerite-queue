@@ -7,12 +7,9 @@ import {
 } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
-import {
-    buildDraftButtons,
-    buildDraftSelectionLists,
-    buildMatchEmbed,
-} from './build-match-ui';
-import { checkCanDraft, processBan, processPick } from './draft-functions';
+import { buildMatchEmbed } from './build-match-embed';
+import { buildDraftButtons, buildDraftSelectionLists } from './build-match-ui';
+import { checkCanDraft, processDraftStep } from './draft-functions';
 import { sendReportUI } from './send-report.ui';
 
 export async function sendDraftUI(
@@ -29,8 +26,8 @@ export async function sendDraftUI(
             teams: {
                 include: {
                     users: { include: { user: true } },
-                    picks: true,
-                    bans: true,
+                    picks: { include: { champion: true } },
+                    bans: { include: { champion: true } },
                 },
             },
         },
@@ -156,29 +153,16 @@ export async function sendDraftUI(
                 case 'meleeList':
                 case 'rangedList':
                 case 'supportList':
-                    if (draftStep.type === 'BAN') {
-                        await processBan(
-                            matchingTeam,
-                            i,
-                            match,
-                            guild,
-                            dbGuild,
-                            teamChannels,
-                            draftUIMessages,
-                        );
-                    }
-
-                    if (draftStep.type === 'PICK') {
-                        await processPick(
-                            matchingTeam,
-                            i,
-                            match,
-                            guild,
-                            dbGuild,
-                            teamChannels,
-                            draftUIMessages,
-                        );
-                    }
+                    await processDraftStep(
+                        match,
+                        matchingTeam,
+                        draftStep,
+                        i,
+                        guild,
+                        dbGuild,
+                        teamChannels,
+                        draftUIMessages,
+                    );
                     break;
             }
         });
