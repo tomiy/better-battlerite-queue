@@ -68,15 +68,16 @@ export function buildDraftSelectionLists(
             ...team.bans.filter((tb) => tb.global),
             ...enemyBans.filter((eb) => eb.global),
         ];
+
         return (
-            (draftStep.type === 'BAN' &&
-                !team.bans.map((tb) => tb.id).includes(id) &&
-                !enemyPicks.map((ep) => ep.id).includes(id) &&
-                !globalBans.map((gb) => gb.id).includes(id)) ||
+            (['BAN', 'GLOBAL_BAN'].includes(draftStep.type) &&
+                !team.bans.map((tb) => tb.championId).includes(id) &&
+                !enemyPicks.map((ep) => ep.championId).includes(id) &&
+                !globalBans.map((gb) => gb.championId).includes(id)) ||
             (draftStep.type === 'PICK' &&
-                !team.picks.map((tp) => tp.id).includes(id) &&
-                !enemyBans.map((eb) => eb.id).includes(id) &&
-                !globalBans.map((gb) => gb.id).includes(id))
+                !team.picks.map((tp) => tp.championId).includes(id) &&
+                !enemyBans.map((eb) => eb.championId).includes(id) &&
+                !globalBans.map((gb) => gb.championId).includes(id))
         );
     };
 

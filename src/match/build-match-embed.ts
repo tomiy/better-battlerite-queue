@@ -42,11 +42,11 @@ export function buildMatchEmbed(
 
     const teamBansFields: APIEmbedField[] = match.teams.map((t) => {
         const teamBans = t.bans
-            .sort((a, b) => b.draftOrder - a.draftOrder)
+            .sort((a, b) => a.draftOrder - b.draftOrder)
             .map(
                 (b) =>
-                    championToChampionName.get(b.champion.champion) ||
-                    'Unknown' + (b.global ? ' (global)' : ''),
+                    (championToChampionName.get(b.champion.champion) ||
+                        'Unknown') + (b.global ? ' (global)' : ''),
             )
             .join('\n');
         return {
@@ -58,7 +58,7 @@ export function buildMatchEmbed(
 
     const teamPicksFields: APIEmbedField[] = match.teams.map((t) => {
         const teamPicks = t.picks
-            .sort((a, b) => b.draftOrder - a.draftOrder)
+            .sort((a, b) => a.draftOrder - b.draftOrder)
             .map(
                 (p) =>
                     championToChampionName.get(p.champion.champion) ||
@@ -113,16 +113,15 @@ export function buildMatchEmbed(
 
     if (match.state === 'ONGOING') {
         const matchUsers = match.teams.flatMap((t) => t.users);
-        const winReports = Object.groupBy(
-            matchUsers,
-            (u) => u.teamWinReport || -1,
+        const winReports = Object.groupBy(matchUsers, (u) =>
+            u.teamWinReport !== null ? u.teamWinReport : -1,
         );
         const dropReportCount = matchUsers
             .map((u) => u.dropReport)
             .filter((r) => r === true).length;
 
         const reportStrings: string[] = match.teams.map(
-            (t) => `Team ${t.order + 1}: ${winReports[t.order]?.length}`,
+            (t) => `Team ${t.order + 1}: ${winReports[t.order]?.length || 0}`,
         );
         reportStrings.push(`Drop: ${dropReportCount}`);
 
@@ -132,12 +131,12 @@ export function buildMatchEmbed(
         });
     }
 
-    if (match.state === 'FINISHED' && match.teamWin) {
+    if (match.state === 'FINISHED' && match.teamWin !== null) {
         const usersRatingChange = match.teams.flatMap((t) =>
             t.users.map((u) => u.ratingChange),
         );
         const averageRatingChange =
-            usersRatingChange.reduce((a, b) => a + b) /
+            usersRatingChange.reduce((a, b) => Math.abs(a) + Math.abs(b)) /
             usersRatingChange.length;
         footerFields.push({
             name: `Team ${match.teamWin + 1} wins!`,

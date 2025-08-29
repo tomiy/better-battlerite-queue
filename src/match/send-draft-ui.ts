@@ -36,7 +36,7 @@ export async function sendDraftUI(
     const totalSteps = match.draftSequence.steps.length * match.teams.length;
 
     if (match.currentDraftStep >= totalSteps) {
-        sendReportUI(match, guild, dbGuild, teamChannels);
+        sendReportUI(match.id, guild, dbGuild, teamChannels);
         return;
     }
 

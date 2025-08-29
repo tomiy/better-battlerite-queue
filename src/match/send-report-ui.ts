@@ -1,5 +1,5 @@
 import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
-import { Prisma, Guild as dbGuild } from '../../.prisma';
+import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
 import { buildMatchEmbed } from './build-match-embed';
@@ -7,25 +7,25 @@ import { buildReportButtons } from './build-match-ui';
 import { tryMatchConclusion } from './try-match-conclusion';
 
 export async function sendReportUI(
-    match: Prisma.MatchGetPayload<{
-        include: {
-            map: true;
-            teams: {
-                include: {
-                    users: { include: { user: true } };
-                    bans: { include: { champion: true } };
-                    picks: { include: { champion: true } };
-                };
-            };
-        };
-    }>,
+    matchId: number,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
 ) {
-    await prisma.match.update({
-        where: { id: match.id },
+    const match = await prisma.match.update({
+        where: { id: matchId },
         data: { state: 'ONGOING' },
+        include: {
+            map: true,
+            draftSequence: { include: { steps: true } },
+            teams: {
+                include: {
+                    users: { include: { user: true } },
+                    picks: { include: { champion: true } },
+                    bans: { include: { champion: true } },
+                },
+            },
+        },
     });
 
     const mainEmbed = buildMatchEmbed(match, guild);
@@ -109,7 +109,7 @@ export async function sendReportUI(
                 tempReply(i, 'Vote registered!');
 
                 await tryMatchConclusion(
-                    match,
+                    updatedMatch,
                     guild,
                     dbGuild,
                     reportUIMessages,
