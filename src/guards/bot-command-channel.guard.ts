@@ -1,5 +1,6 @@
-import { CommandInteraction, MessageFlags, channelMention } from 'discord.js';
+import { CommandInteraction, channelMention } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
+import { tempReply } from '../interaction-utils';
 import { GuardFunction } from './guard';
 
 export const botCommandsChannel: GuardFunction = async (
@@ -13,17 +14,14 @@ export const botCommandsChannel: GuardFunction = async (
     const botCommandsChannel = guild.botCommandsChannel;
 
     if (botCommandsChannel === null) {
-        await interaction.reply({
-            content: 'No bot commands channel found, check bot logs',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'No bot commands channel found, check bot logs');
         return false;
     }
 
-    await interaction.reply({
-        content: `Invalid context, you must use ${channelMention(botCommandsChannel)}`,
-        flags: MessageFlags.Ephemeral,
-    });
+    tempReply(
+        interaction,
+        `Invalid context, you must use ${channelMention(botCommandsChannel)}`,
+    );
 
     return false;
 };

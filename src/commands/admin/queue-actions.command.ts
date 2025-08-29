@@ -1,13 +1,10 @@
-import {
-    CommandInteraction,
-    MessageFlags,
-    SlashCommandBuilder,
-} from 'discord.js';
+import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botModGuard } from '../../guards/bot-mod.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
+import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder()
@@ -62,10 +59,7 @@ async function execute(interaction: CommandInteraction) {
             where: { user: { guild: { guildDiscordId: guild.id } } },
         });
 
-        await interaction.reply({
-            content: 'Queue reset!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'Queue reset!');
     }
 
     if (interaction.options.getSubcommand() === 'fill') {
@@ -75,10 +69,7 @@ async function execute(interaction: CommandInteraction) {
             data: allUsers.map((u) => ({ userId: u.id })),
         });
 
-        await interaction.reply({
-            content: 'Queue filled!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'Queue filled!');
     }
 }
 

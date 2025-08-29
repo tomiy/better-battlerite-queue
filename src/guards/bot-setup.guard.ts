@@ -1,5 +1,6 @@
-import { CommandInteraction, MessageFlags } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
+import { tempReply } from '../interaction-utils';
 import { GuardFunction } from './guard';
 
 export const botSetup: GuardFunction = async (
@@ -9,14 +10,12 @@ export const botSetup: GuardFunction = async (
     if (
         !guild.botCommandsChannel ||
         !guild.queueChannel ||
+        !guild.matchHistoryChannel ||
         !guild.botModRole ||
         !guild.registeredRole ||
         !guild.queueRole
     ) {
-        await interaction.reply({
-            content: 'Bot is not setup, check logs',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'Bot is not setup, check logs');
         return false;
     }
 

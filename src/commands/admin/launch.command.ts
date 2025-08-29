@@ -5,7 +5,6 @@ import {
     channelMention,
     CommandInteraction,
     ComponentType,
-    MessageFlags,
     SlashCommandBuilder,
     TextChannel,
 } from 'discord.js';
@@ -15,6 +14,7 @@ import { joinQueue, leaveQueue, toggleRegion } from '../../db/queue-functions';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botModGuard } from '../../guards/bot-mod.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
+import { tempReply } from '../../interaction-utils';
 import { tryMatchCreation } from '../../match/try-match-creation';
 import { Command } from '../command';
 
@@ -46,10 +46,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     const queueChannel = interaction.client.channels.cache.get(queueChannelId);
 
     if (!queueChannelId) {
-        interaction.reply({
-            content: 'Queue channel does not exist, check settings',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'Queue channel does not exist, check settings');
         return;
     }
 
@@ -99,10 +96,10 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             });
 
             if (!user) {
-                await i.reply({
-                    content: `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`,
-                    flags: MessageFlags.Ephemeral,
-                });
+                tempReply(
+                    i,
+                    `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`,
+                );
                 return;
             }
 
@@ -137,16 +134,12 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             }
         });
 
-        interaction.reply({
-            content: 'Queue has been launched!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'Queue has been launched!');
     } else {
-        interaction.reply({
-            content:
-                'Cannot send messages to queue channel, check bot permissions!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(
+            interaction,
+            'Cannot send messages to queue channel, check bot permissions!',
+        );
     }
 }
 

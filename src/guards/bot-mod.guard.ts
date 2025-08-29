@@ -1,10 +1,6 @@
-import {
-    CommandInteraction,
-    GuildMember,
-    MessageFlags,
-    roleMention,
-} from 'discord.js';
+import { CommandInteraction, GuildMember, roleMention } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
+import { tempReply } from '../interaction-utils';
 import { GuardFunction } from './guard';
 
 export const botModGuard: GuardFunction = async (
@@ -22,10 +18,10 @@ export const botModGuard: GuardFunction = async (
             ? roleMention(botModRole)
             : 'the bot moderator';
 
-        await interaction.reply({
-            content: `Invalid context, you must have the ${botModRoleMention} role`,
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(
+            interaction,
+            `Invalid context, you must have the ${botModRoleMention} role`,
+        );
 
         return false;
     }

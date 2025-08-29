@@ -2,7 +2,6 @@ import {
     ActionRowBuilder,
     CommandInteraction,
     GuildMember,
-    MessageFlags,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     SlashCommandBuilder,
@@ -14,6 +13,7 @@ import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
 import { botSetup } from '../../guards/bot-setup.guard';
+import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder()
@@ -26,10 +26,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     });
 
     if (user) {
-        await interaction.reply({
-            content: 'You are already registered!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(interaction, 'You are already registered!');
         return;
     }
 
@@ -90,16 +87,13 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 await (interaction.member as GuildMember)?.roles.add(
                     dbGuild.registeredRole!,
                 );
-                await submitted.reply({
-                    content: `You are now registered!`,
-                    flags: MessageFlags.Ephemeral,
-                });
+                tempReply(submitted, 'You are now registered!');
             }
         } else {
-            await interaction.reply({
-                content: `Something went wrong with the registration modal :/`,
-                flags: MessageFlags.Ephemeral,
-            });
+            tempReply(
+                interaction,
+                'Something went wrong with the registration modal :/',
+            );
             DebugUtils.error(
                 `[Register] Something went wrong with the registration modal`,
             );

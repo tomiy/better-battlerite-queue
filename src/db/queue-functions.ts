@@ -1,6 +1,7 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
 import { Queue, Region, User } from '../../.prisma';
 import { prisma } from '../config';
+import { tempReply } from '../interaction-utils';
 
 export async function joinQueue(
     queuedUser: Queue | null,
@@ -16,18 +17,12 @@ export async function joinQueue(
     });
 
     if (matchUser) {
-        await i.reply({
-            content: 'You are in a match!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'You are in a match!');
         return false;
     }
 
     if (queuedUser) {
-        await i.reply({
-            content: 'You are already in queue!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'You are already in queue!');
         return false;
     }
 
@@ -36,19 +31,13 @@ export async function joinQueue(
     });
 
     if (!userRegion) {
-        await i.reply({
-            content: 'You need to enable at least one region to queue!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'You need to enable at least one region to queue!');
         return false;
     }
 
     await prisma.queue.create({ data: { userId: user.id } });
     await i.member.roles.add(queueRoleId);
-    await i.reply({
-        content: 'Queue joined!',
-        flags: MessageFlags.Ephemeral,
-    });
+    tempReply(i, 'Queue joined!');
 
     return true;
 }
@@ -60,10 +49,7 @@ export async function leaveQueue(
 ) {
     if (!queuedUser) {
         if (!i.replied) {
-            await i.reply({
-                content: 'You are not in queue!',
-                flags: MessageFlags.Ephemeral,
-            });
+            tempReply(i, 'You are not in queue!');
         }
         return false;
     }
@@ -72,10 +58,7 @@ export async function leaveQueue(
     await i.member.roles.remove(queueRoleId);
 
     if (!i.replied) {
-        await i.reply({
-            content: 'Queue left!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'Queue left!');
     }
 
     return true;
@@ -102,10 +85,7 @@ export async function toggleRegion(
             throw new Error('[Launch command] Could not create user region!');
         }
 
-        await i.reply({
-            content: `Region ${region} enabled!`,
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, `Region ${region} enabled!`);
 
         return true;
     } else {
@@ -117,10 +97,7 @@ export async function toggleRegion(
             throw new Error('[Launch command] Could not delete user region!');
         }
 
-        await i.reply({
-            content: `Region ${region} disabled!`,
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, `Region ${region} disabled!`);
 
         const userRegion = await prisma.userRegion.findFirst({
             where: { userId: user.id },
@@ -132,10 +109,10 @@ export async function toggleRegion(
             });
 
             if (await leaveQueue(queuedUser, user, i, queueRoleId)) {
-                await i.followUp({
+                i.followUp({
                     content: 'No regions selected, unqueuing',
                     flags: MessageFlags.Ephemeral,
-                });
+                }).then((msg) => setTimeout(() => msg.delete(), 3000));
             }
         }
 

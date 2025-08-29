@@ -1,12 +1,7 @@
-import {
-    ComponentType,
-    Guild,
-    Message,
-    MessageFlags,
-    TextChannel,
-} from 'discord.js';
+import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
 import { Prisma, Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
+import { tempReply } from '../interaction-utils';
 import { buildMatchEmbed, buildReportButtons } from './build-match-ui';
 
 export async function sendReportUI(
@@ -109,19 +104,13 @@ export async function sendReportUI(
                     });
                 }
 
-                await i.reply({
-                    content: 'Vote registered!',
-                    flags: MessageFlags.Ephemeral,
-                });
+                tempReply(i, 'Vote registered!');
 
                 // TODO: check if majority vote
                 return;
             }
 
-            await i.reply({
-                content: 'You are not in this match!',
-                flags: MessageFlags.Ephemeral,
-            });
+            tempReply(i, 'You are not in this match!');
         });
     }
 }

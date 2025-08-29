@@ -2,12 +2,12 @@ import {
     Guild,
     Message,
     MessageComponentInteraction,
-    MessageFlags,
     StringSelectMenuInteraction,
     TextChannel,
 } from 'discord.js';
 import { Match, MatchTeam, Prisma, Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
+import { tempReply } from '../interaction-utils';
 import { sendDraftUI } from './send-draft-ui';
 
 export async function checkCanDraft(
@@ -17,18 +17,12 @@ export async function checkCanDraft(
     team: MatchTeam,
 ) {
     if (i.member.id !== captain?.user.userDiscordId) {
-        await i.reply({
-            content: 'You are not captain!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'You are not captain!');
         return false;
     }
 
     if (currentDraftTeam !== team.order) {
-        await i.reply({
-            content: 'It is not your turn to draft!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'It is not your turn to draft!');
         return false;
     }
 
@@ -73,10 +67,7 @@ export async function processPick(
     });
 
     if (updated) {
-        await i.reply({
-            content: 'Pick registered!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'Pick registered!');
 
         await sendNextStep(
             match,
@@ -106,10 +97,7 @@ export async function processBan(
     });
 
     if (updated) {
-        await i.reply({
-            content: 'Ban registered!',
-            flags: MessageFlags.Ephemeral,
-        });
+        tempReply(i, 'Ban registered!');
 
         await sendNextStep(
             match,
