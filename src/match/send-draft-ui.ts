@@ -10,7 +10,7 @@ import { prisma } from '../config';
 import { buildMatchEmbed } from './build-match-embed';
 import { buildDraftButtons, buildDraftSelectionLists } from './build-match-ui';
 import { checkCanDraft, processDraftStep } from './draft-functions';
-import { sendReportUI } from './send-report.ui';
+import { sendReportUI } from './send-report-ui';
 
 export async function sendDraftUI(
     matchId: number,

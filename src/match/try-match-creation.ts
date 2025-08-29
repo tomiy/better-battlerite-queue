@@ -2,6 +2,7 @@ import { Guild } from 'discord.js';
 import { Guild as dbGuild, Prisma, Region } from '../../.prisma';
 import { defaultDraftSequenceName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
+import { getTeamAverageElo } from './compute-rating-changes';
 import { initDraft } from './init-draft';
 
 const validRegionStrings = Object.values(Region);
@@ -90,8 +91,8 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
             teams.push(matchUserPermutation.slice(i, i + teamSize));
         }
 
-        const teamsAverageElo = teams.map(
-            (t) => t.reduce((s, t) => s + t.user.elo, 0) / t.length,
+        const teamsAverageElo = teams.map((t) =>
+            getTeamAverageElo(t.map((u) => u.user)),
         );
 
         const diff =

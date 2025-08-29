@@ -133,9 +133,15 @@ export function buildMatchEmbed(
     }
 
     if (match.state === 'FINISHED' && match.teamWin) {
+        const usersRatingChange = match.teams.flatMap((t) =>
+            t.users.map((u) => u.ratingChange),
+        );
+        const averageRatingChange =
+            usersRatingChange.reduce((a, b) => a + b) /
+            usersRatingChange.length;
         footerFields.push({
             name: `Team ${match.teamWin + 1} wins!`,
-            value: 'Elo exchange complete', // TODO: display elo change
+            value: `Average rating change: ${averageRatingChange}`,
         });
     }
 

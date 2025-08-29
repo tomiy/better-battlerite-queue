@@ -133,6 +133,8 @@ model MatchUser {
     teamWinReport Int?
     dropReport    Boolean @default(false)
 
+    ratingChange Int @default(0)
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }

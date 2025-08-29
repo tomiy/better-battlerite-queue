@@ -4,6 +4,7 @@ import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
 import { buildMatchEmbed } from './build-match-embed';
 import { buildReportButtons } from './build-match-ui';
+import { tryMatchConclusion } from './try-match-conclusion';
 
 export async function sendReportUI(
     match: Prisma.MatchGetPayload<{
@@ -107,7 +108,13 @@ export async function sendReportUI(
 
                 tempReply(i, 'Vote registered!');
 
-                // TODO: check if majority vote
+                await tryMatchConclusion(
+                    match,
+                    guild,
+                    dbGuild,
+                    reportUIMessages,
+                );
+
                 return;
             }
 
