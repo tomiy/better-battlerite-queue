@@ -17,7 +17,7 @@ export async function executeCommand(
     interaction: CommandInteraction,
 ) {
     const dbGuild = await prisma.guild.findFirstOrThrow({
-        where: { guildDiscordId: interaction.guildId! },
+        where: { guildDiscordId: interaction.guildId || '' },
     });
 
     for (const guard of command.guards) {

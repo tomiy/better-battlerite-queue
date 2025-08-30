@@ -142,9 +142,13 @@ export function buildMatchEmbed(
     }
 
     return new EmbedBuilder()
-        .setAuthor({ name: `Match #${match.id}`, iconURL: guild.iconURL()! })
+        .setAuthor({
+            name: `Match #${match.id}`,
+            iconURL: guild.iconURL() || '',
+        })
         .setColor(getEmbedColor(match.state))
         .addFields(teamsFields)
+        .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
         .addFields(infoFields)
         .addFields(teamBansFields)
         .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields

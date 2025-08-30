@@ -75,7 +75,7 @@ export async function initDraft(
             },
         });
 
-        await sendPlayerUI(team, teamChannel);
+        await sendPlayerUI(team, teamChannel, guild);
     }
 
     await prisma.match.update({
