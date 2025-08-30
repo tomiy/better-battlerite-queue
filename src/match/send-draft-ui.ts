@@ -68,7 +68,7 @@ export async function sendDraftUI(
             throw new Error('[Draft UI] No matching team for team channel!');
         }
 
-        const captain = matchingTeam.users.find((u) => u.captain);
+        const captain = matchingTeam.players.find((p) => p.captain);
 
         if (!captain) {
             throw new Error(
@@ -84,7 +84,7 @@ export async function sendDraftUI(
 
         if (currentDraftTeam === matchingTeam.order) {
             await tc.send({
-                content: `${userMention(captain.user.userDiscordId)} it's your turn to draft!`,
+                content: `${userMention(captain.member.discordId)} it's your turn to draft!`,
             });
         }
 

@@ -91,11 +91,11 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
         });
 
         buttonCollector?.on('collect', async (i) => {
-            const user = await prisma.user.findFirst({
-                where: { userDiscordId: i.user.id, guildId: dbGuild.id },
+            const member = await prisma.member.findFirst({
+                where: { discordId: i.member.id, guildId: dbGuild.id },
             });
 
-            if (!user) {
+            if (!member) {
                 tempReply(
                     i,
                     `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`,
@@ -103,31 +103,31 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 return;
             }
 
-            const queuedUser = await prisma.queue.findFirst({
-                where: { userId: user.id },
+            const queuedMember = await prisma.queue.findFirst({
+                where: { memberId: member.id },
             });
 
             switch (i.customId) {
                 case 'queueButton':
-                    if (await joinQueue(queuedUser, user, i, queueRoleId)) {
+                    if (await joinQueue(queuedMember, member, i, queueRoleId)) {
                         await tryMatchCreation(dbGuild, i.member.guild);
                     }
                     break;
                 case 'leaveButton':
-                    await leaveQueue(queuedUser, user, i, queueRoleId);
+                    await leaveQueue(queuedMember, member, i, queueRoleId);
                     break;
                 case 'toggleEUButton':
-                    if (await toggleRegion(user, Region.EU, i, queueRoleId)) {
+                    if (await toggleRegion(member, Region.EU, i, queueRoleId)) {
                         tryMatchCreation(dbGuild, i.member.guild);
                     }
                     break;
                 case 'toggleNAButton':
-                    if (await toggleRegion(user, Region.NA, i, queueRoleId)) {
+                    if (await toggleRegion(member, Region.NA, i, queueRoleId)) {
                         tryMatchCreation(dbGuild, i.member.guild);
                     }
                     break;
                 case 'toggleSAButton':
-                    if (await toggleRegion(user, Region.SA, i, queueRoleId)) {
+                    if (await toggleRegion(member, Region.SA, i, queueRoleId)) {
                         tryMatchCreation(dbGuild, i.member.guild);
                     }
                     break;

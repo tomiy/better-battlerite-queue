@@ -7,8 +7,8 @@ import { initDraft } from './init-draft';
 
 const validRegionStrings = Object.values(Region);
 
-type QueueWithUser = Prisma.QueueGetPayload<{
-    include: { user: { include: { regions: true } } };
+type QueueWithMember = Prisma.QueueGetPayload<{
+    include: { member: { include: { regions: true } } };
 }>;
 
 const matchSize = 6;
@@ -21,78 +21,82 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         );
     }
 
-    const queuedUsers: QueueWithUser[] = await prisma.queue.findMany({
-        where: { user: { guildId: dbGuild.id } },
+    const queuedMembers: QueueWithMember[] = await prisma.queue.findMany({
+        where: { member: { guildId: dbGuild.id } },
         orderBy: { createdAt: 'asc' },
-        include: { user: { include: { regions: true } } },
+        include: { member: { include: { regions: true } } },
     });
 
     const ongoingMatches = await prisma.match.findMany({
         where: { state: { notIn: ['DROPPED', 'FINISHED'] } },
-        include: { teams: { include: { users: true } } },
+        include: { teams: { include: { players: true } } },
     });
 
-    const matchesUserIds = ongoingMatches.flatMap((m) =>
-        m.teams.flatMap((t) => t.users.map((u) => u.userId)),
+    const matchesMemberIds = ongoingMatches.flatMap((m) =>
+        m.teams.flatMap((t) => t.players.map((u) => u.memberId)),
     );
-    const queuedUserIds = queuedUsers.map((q) => q.userId);
+    const queuedMemberIds = queuedMembers.map((q) => q.memberId);
 
-    if (matchesUserIds.some((u) => queuedUserIds.includes(u))) {
+    if (matchesMemberIds.some((u) => queuedMemberIds.includes(u))) {
         DebugUtils.debug(
-            '[Match Creation] Users in queue and match at the same time, this could be due to multiple quick queue interactions',
+            '[Match Creation] Members in queue and match at the same time, this could be due to multiple quick queue interactions',
         );
         return;
     }
 
-    if (queuedUsers.length < matchSize) {
+    if (queuedMembers.length < matchSize) {
         DebugUtils.debug(
-            '[Match Creation] Not enough users in queue to create match',
+            '[Match Creation] Not enough members in queue to create match',
         );
         return;
     }
 
-    const usersByRegion: Map<Region, QueueWithUser[]> = new Map();
+    const membersByRegion: Map<Region, QueueWithMember[]> = new Map();
     validRegionStrings.forEach((region) => {
-        if (!usersByRegion.has(region)) {
-            usersByRegion.set(region, []);
+        if (!membersByRegion.has(region)) {
+            membersByRegion.set(region, []);
         }
 
-        queuedUsers.forEach((queuedUser) => {
-            if (queuedUser.user.regions.map((r) => r.region).includes(region)) {
-                usersByRegion.get(region)?.push(queuedUser);
+        queuedMembers.forEach((queuedMember) => {
+            if (
+                queuedMember.member.regions
+                    .map((r) => r.region)
+                    .includes(region)
+            ) {
+                membersByRegion.get(region)?.push(queuedMember);
             }
         });
     });
 
-    const firstQueuedUsersByRegion = [...usersByRegion.values()].find(
+    const firstQueuedMembersByRegion = [...membersByRegion.values()].find(
         (u) => u.length >= matchSize,
     );
-    if (!firstQueuedUsersByRegion) {
+    if (!firstQueuedMembersByRegion) {
         DebugUtils.debug(
-            '[Match Creation] Not enough users grouped by region to create match',
+            '[Match Creation] Not enough members grouped by region to create match',
         );
         return;
     }
 
-    const matchUsers = firstQueuedUsersByRegion.splice(0, matchSize);
-    const matchUsersPermutations = permuteMatchUsers(matchUsers);
+    const matchMembers = firstQueuedMembersByRegion.splice(0, matchSize);
+    const matchMembersPermutations = permuteMatchMembers(matchMembers);
 
     const bestConfig: {
         diff: number;
-        teams: QueueWithUser[][];
+        teams: QueueWithMember[][];
     } = {
         diff: Infinity,
         teams: [],
     };
 
-    for (const matchUserPermutation of matchUsersPermutations) {
+    for (const matchMemberPermutation of matchMembersPermutations) {
         const teams = [];
-        for (let i = 0; i < matchUserPermutation.length; i += teamSize) {
-            teams.push(matchUserPermutation.slice(i, i + teamSize));
+        for (let i = 0; i < matchMemberPermutation.length; i += teamSize) {
+            teams.push(matchMemberPermutation.slice(i, i + teamSize));
         }
 
         const teamsAverageElo = teams.map((t) =>
-            getTeamAverageElo(t.map((u) => u.user)),
+            getTeamAverageElo(t.map((u) => u.member)),
         );
 
         const diff =
@@ -134,58 +138,58 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         throw new Error('[Match Creation] Could not create match!');
     }
 
-    const teamsUserData: Prisma.MatchUserCreateManyInput[] = [];
+    const teamsPlayerData: Prisma.MatchPlayerCreateManyInput[] = [];
     bestConfig.teams.forEach((team, teamIndex) => {
-        teamsUserData.push(
+        teamsPlayerData.push(
             ...team
-                .sort((a, b) => b.user.elo - a.user.elo)
-                .map((teamUser, teamUserIndex) => ({
+                .sort((a, b) => b.member.elo - a.member.elo)
+                .map((player, playerIndex) => ({
                     teamId: match.teams[teamIndex].id,
-                    userId: teamUser.userId,
-                    captain: teamUserIndex === 0,
+                    memberId: player.memberId,
+                    captain: playerIndex === 0,
                 })),
         );
     });
 
-    const matchUserData = await prisma.matchUser.createManyAndReturn({
-        data: teamsUserData,
-        include: { user: true },
+    const playerData = await prisma.matchPlayer.createManyAndReturn({
+        data: teamsPlayerData,
+        include: { member: true },
     });
 
-    if (!matchUserData) {
-        throw new Error('[Match Creation] Could not create match users!');
+    if (!playerData) {
+        throw new Error('[Match Creation] Could not create players!');
     }
 
-    for (const matchUser of matchUserData) {
-        const discordMember = guild.members.cache.get(
-            matchUser.user.userDiscordId,
-        );
+    for (const player of playerData) {
+        const discordMember = guild.members.cache.get(player.member.discordId);
 
         if (!discordMember) {
             throw new Error(
-                `[Match Creation] Could not find match discord member for user discord id ${matchUser.user.userDiscordId}`,
+                `[Match Creation] Could not find match discord member for discord id ${player.member.discordId}`,
             );
         }
 
-        await discordMember.roles.remove(dbGuild.queueRole!);
-        await discordMember.roles.add(dbGuild.matchRole!);
+        await discordMember.roles.remove(dbGuild.queueRole || '');
+        await discordMember.roles.add(dbGuild.matchRole || '');
     }
 
     const deleted = await prisma.queue.deleteMany({
-        where: { userId: { in: matchUserData.map((u) => u.userId) } },
+        where: { memberId: { in: playerData.map((u) => u.memberId) } },
     });
 
     if (!deleted) {
-        throw new Error('[Match Creation] Could not remove users from queue!');
+        throw new Error(
+            '[Match Creation] Could not remove members from queue!',
+        );
     }
 
     await initDraft(match.id, guild, dbGuild);
 }
 
-function permuteMatchUsers(a: QueueWithUser[]) {
-    const result: QueueWithUser[][] = [];
+function permuteMatchMembers(a: QueueWithMember[]) {
+    const result: QueueWithMember[][] = [];
 
-    const permute = (a: QueueWithUser[], m: QueueWithUser[] = []) => {
+    const permute = (a: QueueWithMember[], m: QueueWithMember[] = []) => {
         if (a.length === 0) {
             result.push(m);
         } else {

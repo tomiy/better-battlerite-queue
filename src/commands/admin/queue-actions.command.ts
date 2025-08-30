@@ -48,25 +48,25 @@ async function execute(interaction: CommandInteraction) {
         );
 
         if (queuedMembers.size) {
-            DebugUtils.debug('[Queue Reset] Purging old queued users...');
+            DebugUtils.debug('[Queue Reset] Purging old queued members...');
 
             queuedMembers.forEach(async (m) => await m.roles.remove(queueRole));
 
-            DebugUtils.debug('[Queue Reset] Purged old queued users');
+            DebugUtils.debug('[Queue Reset] Purged old queued members');
         }
 
         await prisma.queue.deleteMany({
-            where: { user: { guild: { guildDiscordId: guild.id } } },
+            where: { member: { guild: { guildDiscordId: guild.id } } },
         });
 
         tempReply(interaction, 'Queue reset!');
     }
 
     if (interaction.options.getSubcommand() === 'fill') {
-        const allUsers = await prisma.user.findMany();
+        const allMembers = await prisma.member.findMany();
 
         await prisma.queue.createMany({
-            data: allUsers.map((u) => ({ userId: u.id })),
+            data: allMembers.map((m) => ({ memberId: m.id })),
         });
 
         tempReply(interaction, 'Queue filled!');

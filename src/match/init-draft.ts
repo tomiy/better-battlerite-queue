@@ -5,10 +5,11 @@ import {
     PermissionsBitField,
     TextChannel,
 } from 'discord.js';
-import { MatchUser, User, Guild as dbGuild } from '../../.prisma';
+import { MatchPlayer, Member, Guild as dbGuild } from '../../.prisma';
 import { categoryChannelName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { sendDraftUI } from './send-draft-ui';
+import { sendPlayerUI } from './send-player-ui';
 
 export async function initDraft(
     matchId: number,
@@ -21,7 +22,7 @@ export async function initDraft(
         where: { id: matchId },
         include: {
             draftSequence: true,
-            teams: { include: { users: { include: { user: true } } } },
+            teams: { include: { players: { include: { member: true } } } },
         },
     });
 
@@ -29,8 +30,8 @@ export async function initDraft(
         (c) => c.name === categoryChannelName,
     ) as CategoryChannel | undefined;
 
-    const mapTeamUsersToPermissionOverwrites = (
-        users: (MatchUser & { user: User })[],
+    const mapPlayersToPermissionOverwrites = (
+        players: (MatchPlayer & { member: Member })[],
     ) => {
         return [
             {
@@ -44,8 +45,8 @@ export async function initDraft(
                     PermissionsBitField.Flags.SendMessages,
                 ],
             },
-            ...users.map((u) => ({
-                id: u.user.userDiscordId,
+            ...players.map((u) => ({
+                id: u.member.discordId,
                 allow: [
                     PermissionsBitField.Flags.ViewChannel,
                     PermissionsBitField.Flags.SendMessages,
@@ -60,8 +61,8 @@ export async function initDraft(
             name: `match-${matchId}-team-${team.order + 1}`,
             parent: categoryChannel,
             type: ChannelType.GuildText,
-            permissionOverwrites: mapTeamUsersToPermissionOverwrites(
-                team.users,
+            permissionOverwrites: mapPlayersToPermissionOverwrites(
+                team.players,
             ),
         });
 
@@ -73,6 +74,8 @@ export async function initDraft(
                 teamChannel: teamChannel.id,
             },
         });
+
+        await sendPlayerUI(team, teamChannel);
     }
 
     await prisma.match.update({

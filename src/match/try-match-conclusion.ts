@@ -12,17 +12,17 @@ export async function tryMatchConclusion(
     dbGuild: dbGuild,
     reportUIMessages: Message<true>[],
 ) {
-    const matchUsers = match.teams.flatMap((t) => t.users);
-    const winReports = Object.groupBy(matchUsers, (u) =>
+    const players = match.teams.flatMap((t) => t.players);
+    const winReports = Object.groupBy(players, (u) =>
         u.teamWinReport !== null ? u.teamWinReport : -1,
     );
-    const dropReportCount = matchUsers
+    const dropReportCount = players
         .map((u) => u.dropReport)
         .filter((r) => r === true).length;
 
-    let updated = null;
+    let updated: FullMatch | null = null;
 
-    if (dropReportCount > matchUsers.length / 2) {
+    if (dropReportCount > players.length / 2) {
         DebugUtils.debug(
             `[Match Conclusion] Majority vote for dropping match ${match.id}`,
         );
@@ -38,27 +38,29 @@ export async function tryMatchConclusion(
         if (
             parseInt(teamNumber) > -1 &&
             reports &&
-            reports.length > matchUsers.length / 2
+            reports.length > players.length / 2
         ) {
             DebugUtils.debug(
                 `[Match Conclusion] Majority vote for team ${parseInt(teamNumber) + 1} in match ${match.id}`,
             );
 
-            const updatedUsers = computeRatingChanges(
+            const updatedPlayers = computeRatingChanges(
                 match.teams,
                 parseInt(teamNumber),
             );
 
-            for (const updatedUser of updatedUsers) {
-                const matchUser = await prisma.matchUser.update({
-                    where: { id: updatedUser.id },
-                    data: { ratingChange: updatedUser.ratingChange },
-                    include: { user: true },
+            for (const updatedPlayer of updatedPlayers) {
+                const player = await prisma.matchPlayer.update({
+                    where: { id: updatedPlayer.id },
+                    data: { ratingChange: updatedPlayer.ratingChange },
+                    include: { member: true },
                 });
 
-                await prisma.user.update({
-                    where: { id: matchUser.userId },
-                    data: { elo: matchUser.user.elo + matchUser.ratingChange },
+                await prisma.member.update({
+                    where: { id: player.memberId },
+                    data: {
+                        elo: player.member.elo + player.ratingChange,
+                    },
                 });
             }
 
@@ -78,9 +80,9 @@ export async function tryMatchConclusion(
         }
 
         for (const team of match.teams) {
-            for (const user of team.users) {
+            for (const player of team.players) {
                 await guild.members.cache
-                    .get(user.user.userDiscordId)
+                    .get(player.member.discordId)
                     ?.roles.remove(dbGuild.matchRole || '');
             }
 

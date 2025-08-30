@@ -17,10 +17,10 @@ export function buildMatchEmbed(
     draftStep?: MatchDraftStep,
 ): EmbedBuilder {
     const teamsFields: APIEmbedField[] = match.teams.map((t) => {
-        const userMentions = t.users
+        const userMentions = t.players
             .map(
-                (u) =>
-                    `${userMention(u.user.userDiscordId)} ${u.captain ? '- Captain' : ''}`,
+                (p) =>
+                    `${userMention(p.member.discordId)} ${p.captain ? '- Captain' : ''}`,
             )
             .join('\n');
         return {
@@ -102,11 +102,11 @@ export function buildMatchEmbed(
     }
 
     if (match.state === 'ONGOING') {
-        const matchUsers = match.teams.flatMap((t) => t.users);
-        const winReports = Object.groupBy(matchUsers, (u) =>
+        const players = match.teams.flatMap((t) => t.players);
+        const winReports = Object.groupBy(players, (u) =>
             u.teamWinReport !== null ? u.teamWinReport : -1,
         );
-        const dropReportCount = matchUsers
+        const dropReportCount = players
             .map((u) => u.dropReport)
             .filter((r) => r === true).length;
 
@@ -122,12 +122,12 @@ export function buildMatchEmbed(
     }
 
     if (match.state === 'FINISHED' && match.teamWin !== null) {
-        const usersRatingChange = match.teams.flatMap((t) =>
-            t.users.map((u) => u.ratingChange),
+        const playersRatingChange = match.teams.flatMap((t) =>
+            t.players.map((p) => p.ratingChange),
         );
         const averageRatingChange =
-            usersRatingChange.reduce((a, b) => Math.abs(a) + Math.abs(b)) /
-            usersRatingChange.length;
+            playersRatingChange.reduce((a, b) => Math.abs(a) + Math.abs(b)) /
+            playersRatingChange.length;
         footerFields.push({
             name: `Team ${match.teamWin + 1} wins!`,
             value: `Average rating change: ${averageRatingChange}`,

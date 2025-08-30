@@ -1,60 +1,60 @@
 import { ButtonInteraction, MessageFlags } from 'discord.js';
-import { Queue, Region, User } from '../../.prisma';
+import { Member, Queue, Region } from '../../.prisma';
 import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
 
 export async function joinQueue(
-    queuedUser: Queue | null,
-    user: User,
+    queuedMember: Queue | null,
+    member: Member,
     i: ButtonInteraction<'cached'>,
     queueRoleId: string,
 ) {
-    const matchUser = await prisma.match.findFirst({
+    const player = await prisma.match.findFirst({
         where: {
             state: { notIn: ['DROPPED', 'FINISHED'] },
-            teams: { some: { users: { some: { userId: user.id } } } },
+            teams: { some: { players: { some: { memberId: member.id } } } },
         },
     });
 
-    if (matchUser) {
+    if (player) {
         tempReply(i, 'You are in a match!');
         return false;
     }
 
-    if (queuedUser) {
+    if (queuedMember) {
         tempReply(i, 'You are already in queue!');
         return false;
     }
 
-    const userRegion = await prisma.userRegion.findFirst({
-        where: { userId: user.id },
+    const memberRegion = await prisma.memberRegion.findFirst({
+        where: { memberId: member.id },
     });
 
-    if (!userRegion) {
+    if (!memberRegion) {
         tempReply(i, 'You need to enable at least one region to queue!');
         return false;
     }
 
-    await prisma.queue.create({ data: { userId: user.id } });
+    await prisma.queue.create({ data: { memberId: member.id } });
     await i.member.roles.add(queueRoleId);
     tempReply(i, 'Queue joined!');
 
     return true;
 }
 export async function leaveQueue(
-    queuedUser: Queue | null,
-    user: User,
+    queuedMember: Queue | null,
+    member: Member,
     i: ButtonInteraction<'cached'>,
     queueRoleId: string,
 ) {
-    if (!queuedUser) {
+    if (!queuedMember) {
         if (!i.replied) {
             tempReply(i, 'You are not in queue!');
         }
         return false;
     }
 
-    await prisma.queue.delete({ where: { userId: user.id } });
+    await prisma.queue.delete({ where: { memberId: member.id } });
     await i.member.roles.remove(queueRoleId);
 
     if (!i.replied) {
@@ -64,51 +64,51 @@ export async function leaveQueue(
     return true;
 }
 export async function toggleRegion(
-    user: User,
+    member: Member,
     region: Region,
     i: ButtonInteraction<'cached'>,
     queueRoleId: string,
 ) {
-    const existingRegion = await prisma.userRegion.findFirst({
-        where: { userId: user.id, region: region },
+    const existingRegion = await prisma.memberRegion.findFirst({
+        where: { memberId: member.id, region: region },
     });
 
     if (!existingRegion) {
-        const created = await prisma.userRegion.create({
+        const created = await prisma.memberRegion.create({
             data: {
-                userId: user.id,
+                memberId: member.id,
                 region: region,
             },
         });
 
         if (!created) {
-            throw new Error('[Launch command] Could not create user region!');
+            throw new Error('[Launch command] Could not create member region!');
         }
 
         tempReply(i, `Region ${region} enabled!`);
 
         return true;
     } else {
-        const deleted = await prisma.userRegion.delete({
+        const deleted = await prisma.memberRegion.delete({
             where: { id: existingRegion.id },
         });
 
         if (!deleted) {
-            throw new Error('[Launch command] Could not delete user region!');
+            throw new Error('[Launch command] Could not delete member region!');
         }
 
         tempReply(i, `Region ${region} disabled!`);
 
-        const userRegion = await prisma.userRegion.findFirst({
-            where: { userId: user.id },
+        const memberRegion = await prisma.memberRegion.findFirst({
+            where: { memberId: member.id },
         });
 
-        if (!userRegion) {
-            const queuedUser = await prisma.queue.findFirst({
-                where: { userId: user.id },
+        if (!memberRegion) {
+            const queuedMember = await prisma.queue.findFirst({
+                where: { memberId: member.id },
             });
 
-            if (await leaveQueue(queuedUser, user, i, queueRoleId)) {
+            if (await leaveQueue(queuedMember, member, i, queueRoleId)) {
                 i.followUp({
                     content: 'No regions selected, unqueuing',
                     flags: MessageFlags.Ephemeral,

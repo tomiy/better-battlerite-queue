@@ -12,8 +12,8 @@ datasource db {
 }
 
 model Guild {
-    id                  Int     @id @default(autoincrement())
-    guildDiscordId      String  @unique
+    id                  Int      @id @default(autoincrement())
+    guildDiscordId      String   @unique
     botCommandsChannel  String?
     queueChannel        String?
     matchHistoryChannel String?
@@ -21,7 +21,7 @@ model Guild {
     registeredRole      String?
     matchRole           String?
     queueRole           String?
-    users               User[]
+    members             Member[]
 
     mapData      MapData[]
     championData ChampionData[]
@@ -30,37 +30,37 @@ model Guild {
     updatedAt DateTime @updatedAt
 }
 
-model User {
-    id            Int          @id @default(autoincrement())
-    userDiscordId String       @unique
-    guild         Guild        @relation(fields: [guildId], references: [id])
-    guildId       Int
-    inGameName    String
-    description   String?
-    regions       UserRegion[]
-    elo           Int          @default(1000)
+model Member {
+    id          Int            @id @default(autoincrement())
+    discordId   String         @unique
+    guild       Guild          @relation(fields: [guildId], references: [id])
+    guildId     Int
+    inGameName  String
+    description String?
+    regions     MemberRegion[]
+    elo         Int            @default(1000)
 
-    queue      Queue?
-    matchUsers MatchUser[]
+    queue        Queue?
+    matchPlayers MatchPlayer[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
-model UserRegion {
-    id     Int    @id @default(autoincrement())
-    user   User   @relation(fields: [userId], references: [id])
-    userId Int
-    region Region
+model MemberRegion {
+    id       Int    @id @default(autoincrement())
+    member   Member @relation(fields: [memberId], references: [id])
+    memberId Int
+    region   Region
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
 
 model Queue {
-    id     Int  @id @default(autoincrement())
-    user   User @relation(fields: [userId], references: [id])
-    userId Int  @unique
+    id       Int    @id @default(autoincrement())
+    member   Member @relation(fields: [memberId], references: [id])
+    memberId Int    @unique
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -113,7 +113,7 @@ model MatchTeam {
     matchId Int
 
     order       Int
-    users       MatchUser[]
+    players     MatchPlayer[]
     teamChannel String?
 
     bans  MatchBan[]
@@ -123,13 +123,13 @@ model MatchTeam {
     updatedAt DateTime @updatedAt
 }
 
-model MatchUser {
-    id      Int       @id @default(autoincrement())
-    user    User      @relation(fields: [userId], references: [id])
-    userId  Int
-    team    MatchTeam @relation(fields: [teamId], references: [id])
-    teamId  Int
-    captain Boolean
+model MatchPlayer {
+    id       Int       @id @default(autoincrement())
+    member   Member    @relation(fields: [memberId], references: [id])
+    memberId Int
+    team     MatchTeam @relation(fields: [teamId], references: [id])
+    teamId   Int
+    captain  Boolean
 
     teamWinReport Int?
     dropReport    Boolean @default(false)

@@ -1,7 +1,6 @@
 import {
     ActionRowBuilder,
     CommandInteraction,
-    GuildMember,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     SlashCommandBuilder,
@@ -17,29 +16,31 @@ import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder()
-    .setName('register')
-    .setDescription('Register');
+    .setName('profile')
+    .setDescription('Profile');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const user = await prisma.user.findFirst({
-        where: { userDiscordId: interaction.user.id, guildId: dbGuild.id },
+    const initialUser = await prisma.member.findFirst({
+        where: { discordId: interaction.user.id, guildId: dbGuild.id },
+        include: { regions: true },
     });
 
-    if (user) {
-        tempReply(interaction, 'You are already registered!');
+    if (!initialUser) {
+        tempReply(interaction, 'You are not registered! use /register');
         return;
     }
 
-    const registerModal = new ModalBuilder()
-        .setCustomId('registerModal')
-        .setTitle('Registration form')
+    const profileModal = new ModalBuilder()
+        .setCustomId('profileModal')
+        .setTitle('Profile form')
         .addComponents();
 
     const inGameNameInput = new TextInputBuilder()
         .setCustomId('inGameNameInput')
         .setLabel('Battlerite username')
         .setStyle(TextInputStyle.Short)
-        .setRequired(true);
+        .setRequired(true)
+        .setValue(initialUser.inGameName);
     const inGameNameRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             inGameNameInput,
@@ -52,15 +53,16 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             'What characters/roles do you play? How chill are you? etc.',
         )
         .setStyle(TextInputStyle.Paragraph)
-        .setRequired(false);
+        .setRequired(false)
+        .setValue(initialUser.description || '');
     const descriptionRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             descriptionInput,
         );
 
-    registerModal.addComponents(inGameNameRow, descriptionRow);
+    profileModal.addComponents(inGameNameRow, descriptionRow);
 
-    await interaction.showModal(registerModal);
+    await interaction.showModal(profileModal);
 
     try {
         const submitted = await interaction.awaitModalSubmit({
@@ -74,36 +76,27 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const description =
                 submitted.fields.getTextInputValue('descriptionInput');
 
-            const user = await prisma.user.create({
-                data: {
-                    userDiscordId: interaction.user.id,
+            const user = await prisma.member.update({
+                where: {
+                    discordId: interaction.user.id,
                     guildId: dbGuild.id,
+                },
+                data: {
                     inGameName: inGameName,
                     description: description,
                 },
             });
 
             if (user) {
-                await (interaction.member as GuildMember)?.roles.add(
-                    dbGuild.registeredRole!,
-                );
-                tempReply(submitted, 'You are now registered!');
+                tempReply(submitted, 'Profile updated!');
             }
-        } else {
-            tempReply(
-                interaction,
-                'Something went wrong with the registration modal :/',
-            );
-            DebugUtils.error(
-                `[Register] Something went wrong with the registration modal`,
-            );
         }
     } catch (e) {
-        DebugUtils.error(`[Register] Timeout: ${e}`);
+        DebugUtils.error(`[Profile] Timeout: ${e}`);
     }
 }
 
-export const register: Command = {
+export const profile: Command = {
     data: data,
     execute: execute,
     guards: [botSetup, botCommandsChannel],

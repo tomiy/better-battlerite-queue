@@ -1,8 +1,8 @@
-import { Prisma, User } from '../../.prisma';
+import { Member, Prisma } from '../../.prisma';
 
 export function computeRatingChanges(
     teams: Prisma.MatchTeamGetPayload<{
-        include: { users: { include: { user: true } } };
+        include: { players: { include: { member: true } } };
     }>[],
     winningTeam: number,
 ) {
@@ -13,30 +13,30 @@ export function computeRatingChanges(
 
     for (let i = 0; i < n; i++) {
         const currentElo = getTeamAverageElo(
-            teams[i].users.map((tu) => tu.user),
+            teams[i].players.map((p) => p.member),
         );
 
         for (let j = 0; j < n; j++) {
             if (i !== j) {
                 const opponentElo = getTeamAverageElo(
-                    teams[j].users.map((tu) => tu.user),
+                    teams[j].players.map((p) => p.member),
                 );
 
                 const win = teams[i].order === winningTeam ? 1 : 0;
                 const probability =
                     1 / (1 + Math.pow(10, (opponentElo - currentElo) / 400));
 
-                updatedTeams[i].users.forEach(
-                    (u) =>
-                        (u.ratingChange += Math.round(k * (win - probability))),
+                updatedTeams[i].players.forEach(
+                    (p) =>
+                        (p.ratingChange += Math.round(k * (win - probability))),
                 );
             }
         }
     }
 
-    return updatedTeams.flatMap((t) => t.users);
+    return updatedTeams.flatMap((t) => t.players);
 }
 
-export function getTeamAverageElo(users: User[]) {
-    return users.reduce((s, u) => s + u.elo, 0) / users.length;
+export function getTeamAverageElo(members: Member[]) {
+    return members.reduce((s, u) => s + u.elo, 0) / members.length;
 }

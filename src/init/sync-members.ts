@@ -4,7 +4,7 @@ import { DebugUtils } from '../debug-utils';
 import { buildMatchEmbed } from '../match/build-match-embed';
 import { fullMatchInclude } from '../match/match.type';
 
-export async function syncUsers(guild: Guild) {
+export async function syncMembers(guild: Guild) {
     try {
         DebugUtils.debug(`[Sync users] Syncing users for guild ${guild.id}`);
 
@@ -33,13 +33,13 @@ export async function syncUsers(guild: Guild) {
         const members = await guild.members.fetch();
 
         const syncedMembers: GuildMember[] = [];
-        const dbUsers = await prisma.user.findMany({
+        const dbUsers = await prisma.member.findMany({
             where: { guild: { guildDiscordId: guild.id } },
         });
 
         for (const dbUser of dbUsers) {
             const matchingMember = members.find(
-                (m) => m.id === dbUser.userDiscordId,
+                (m) => m.id === dbUser.discordId,
             );
 
             if (
@@ -57,7 +57,7 @@ export async function syncUsers(guild: Guild) {
                 (syncedMember) => syncedMember.id === clientUserId,
             );
             const dbUser = dbUsers.find(
-                (dbUser) => dbUser.userDiscordId === clientUserId,
+                (dbUser) => dbUser.discordId === clientUserId,
             );
 
             if (!syncedMember && !dbUser) {

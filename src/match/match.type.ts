@@ -5,7 +5,7 @@ export type FullMatch = Prisma.MatchGetPayload<{
         map: true;
         teams: {
             include: {
-                users: { include: { user: true } };
+                players: { include: { member: true } };
                 bans: { include: { champion: true } };
                 picks: { include: { champion: true } };
             };
@@ -18,7 +18,7 @@ export const fullMatchInclude = {
     draftSequence: { include: { steps: true } },
     teams: {
         include: {
-            users: { include: { user: true } },
+            players: { include: { member: true } },
             picks: { include: { champion: true } },
             bans: { include: { champion: true } },
         },

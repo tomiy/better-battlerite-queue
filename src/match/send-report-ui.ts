@@ -47,7 +47,7 @@ export async function sendReportUI(
         });
     }
 
-    const allMatchUsers = match.teams.flatMap((t) => t.users);
+    const allPlayers = match.teams.flatMap((t) => t.players);
 
     for (const reportMessage of reportUIMessages) {
         const buttonCollector = reportMessage.createMessageComponentCollector({
@@ -55,13 +55,13 @@ export async function sendReportUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
-            const matchingMatchUser = allMatchUsers.find(
-                (u) => u.user.userDiscordId === i.member.id,
+            const matchingPlayer = allPlayers.find(
+                (u) => u.member.discordId === i.member.id,
             );
-            if (matchingMatchUser) {
+            if (matchingPlayer) {
                 if (i.customId === 'reportButtonDrop') {
-                    await prisma.matchUser.update({
-                        where: { id: matchingMatchUser.id },
+                    await prisma.matchPlayer.update({
+                        where: { id: matchingPlayer.id },
                         data: { teamWinReport: null, dropReport: true },
                     });
                 } else {
@@ -69,8 +69,8 @@ export async function sendReportUI(
                         i.customId.replace(/[^0-9]/g, ''),
                     );
 
-                    await prisma.matchUser.update({
-                        where: { id: matchingMatchUser.id },
+                    await prisma.matchPlayer.update({
+                        where: { id: matchingPlayer.id },
                         data: {
                             teamWinReport: teamWinReport,
                             dropReport: false,

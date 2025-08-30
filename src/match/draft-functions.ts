@@ -18,11 +18,11 @@ import { sendDraftUI } from './send-draft-ui';
 
 export async function checkCanDraft(
     i: MessageComponentInteraction<'cached'>,
-    captain: Prisma.MatchUserGetPayload<{ include: { user: true } }>,
+    captain: Prisma.MatchPlayerGetPayload<{ include: { member: true } }>,
     currentDraftTeam: number,
     team: MatchTeam,
 ) {
-    if (i.member.id !== captain?.user.userDiscordId) {
+    if (i.member.id !== captain?.member.discordId) {
         tempReply(i, 'You are not captain!');
         return false;
     }

@@ -1,6 +1,7 @@
 import {
     ActionRowBuilder,
     CommandInteraction,
+    GuildMember,
     ModalActionRowComponentBuilder,
     ModalBuilder,
     SlashCommandBuilder,
@@ -16,31 +17,29 @@ import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
 
 const data = new SlashCommandBuilder()
-    .setName('profile')
-    .setDescription('Profile');
+    .setName('register')
+    .setDescription('Register');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const initialUser = await prisma.user.findFirst({
-        where: { userDiscordId: interaction.user.id, guildId: dbGuild.id },
-        include: { regions: true },
+    const user = await prisma.member.findFirst({
+        where: { discordId: interaction.user.id, guildId: dbGuild.id },
     });
 
-    if (!initialUser) {
-        tempReply(interaction, 'You are not registered! use /register');
+    if (user) {
+        tempReply(interaction, 'You are already registered!');
         return;
     }
 
-    const profileModal = new ModalBuilder()
-        .setCustomId('profileModal')
-        .setTitle('Profile form')
+    const registerModal = new ModalBuilder()
+        .setCustomId('registerModal')
+        .setTitle('Registration form')
         .addComponents();
 
     const inGameNameInput = new TextInputBuilder()
         .setCustomId('inGameNameInput')
         .setLabel('Battlerite username')
         .setStyle(TextInputStyle.Short)
-        .setRequired(true)
-        .setValue(initialUser.inGameName);
+        .setRequired(true);
     const inGameNameRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             inGameNameInput,
@@ -53,16 +52,15 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             'What characters/roles do you play? How chill are you? etc.',
         )
         .setStyle(TextInputStyle.Paragraph)
-        .setRequired(false)
-        .setValue(initialUser.description || '');
+        .setRequired(false);
     const descriptionRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             descriptionInput,
         );
 
-    profileModal.addComponents(inGameNameRow, descriptionRow);
+    registerModal.addComponents(inGameNameRow, descriptionRow);
 
-    await interaction.showModal(profileModal);
+    await interaction.showModal(registerModal);
 
     try {
         const submitted = await interaction.awaitModalSubmit({
@@ -76,27 +74,36 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const description =
                 submitted.fields.getTextInputValue('descriptionInput');
 
-            const user = await prisma.user.update({
-                where: {
-                    userDiscordId: interaction.user.id,
-                    guildId: dbGuild.id,
-                },
+            const user = await prisma.member.create({
                 data: {
+                    discordId: interaction.user.id,
+                    guildId: dbGuild.id,
                     inGameName: inGameName,
                     description: description,
                 },
             });
 
             if (user) {
-                tempReply(submitted, 'Profile updated!');
+                await (interaction.member as GuildMember)?.roles.add(
+                    dbGuild.registeredRole!,
+                );
+                tempReply(submitted, 'You are now registered!');
             }
+        } else {
+            tempReply(
+                interaction,
+                'Something went wrong with the registration modal :/',
+            );
+            DebugUtils.error(
+                `[Register] Something went wrong with the registration modal`,
+            );
         }
     } catch (e) {
-        DebugUtils.error(`[Profile] Timeout: ${e}`);
+        DebugUtils.error(`[Register] Timeout: ${e}`);
     }
 }
 
-export const profile: Command = {
+export const register: Command = {
     data: data,
     execute: execute,
     guards: [botSetup, botCommandsChannel],
