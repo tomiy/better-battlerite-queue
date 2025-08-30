@@ -1,23 +1,13 @@
 import { Guild, Message } from 'discord.js';
-import { Prisma, Guild as dbGuild } from '../../.prisma';
+import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { buildMatchEmbed } from './build-match-embed';
 import { computeRatingChanges } from './compute-rating-changes';
+import { FullMatch, fullMatchInclude } from './match.type';
 
 export async function tryMatchConclusion(
-    match: Prisma.MatchGetPayload<{
-        include: {
-            map: true;
-            teams: {
-                include: {
-                    users: { include: { user: true } };
-                    bans: { include: { champion: true } };
-                    picks: { include: { champion: true } };
-                };
-            };
-        };
-    }>,
+    match: FullMatch,
     guild: Guild,
     dbGuild: dbGuild,
     reportUIMessages: Message<true>[],
@@ -40,16 +30,7 @@ export async function tryMatchConclusion(
         updated = await prisma.match.update({
             where: { id: match.id },
             data: { state: 'DROPPED' },
-            include: {
-                map: true,
-                teams: {
-                    include: {
-                        users: { include: { user: true } },
-                        bans: { include: { champion: true } },
-                        picks: { include: { champion: true } },
-                    },
-                },
-            },
+            include: fullMatchInclude,
         });
     }
 
@@ -60,7 +41,7 @@ export async function tryMatchConclusion(
             reports.length > matchUsers.length / 2
         ) {
             DebugUtils.debug(
-                `[Match Conclusion] Majority vote for team ${parseInt(teamNumber)} in match ${match.id}`,
+                `[Match Conclusion] Majority vote for team ${parseInt(teamNumber) + 1} in match ${match.id}`,
             );
 
             const updatedUsers = computeRatingChanges(
@@ -84,16 +65,7 @@ export async function tryMatchConclusion(
             updated = await prisma.match.update({
                 where: { id: match.id },
                 data: { state: 'FINISHED', teamWin: parseInt(teamNumber) },
-                include: {
-                    map: true,
-                    teams: {
-                        include: {
-                            users: { include: { user: true } },
-                            bans: { include: { champion: true } },
-                            picks: { include: { champion: true } },
-                        },
-                    },
-                },
+                include: fullMatchInclude,
             });
         }
     }
@@ -102,9 +74,7 @@ export async function tryMatchConclusion(
         const updatedEmbed = buildMatchEmbed(updated, guild);
 
         for (const message of reportUIMessages) {
-            await message.edit({
-                embeds: [updatedEmbed],
-            });
+            await message.edit({ embeds: [updatedEmbed], components: [] });
         }
 
         for (const team of match.teams) {

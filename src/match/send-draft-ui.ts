@@ -10,6 +10,7 @@ import { prisma } from '../config';
 import { buildMatchEmbed } from './build-match-embed';
 import { buildDraftButtons, buildDraftSelectionLists } from './build-match-ui';
 import { checkCanDraft, processDraftStep } from './draft-functions';
+import { fullMatchInclude } from './match.type';
 import { sendReportUI } from './send-report-ui';
 
 export async function sendDraftUI(
@@ -20,17 +21,7 @@ export async function sendDraftUI(
 ) {
     const match = await prisma.match.findFirstOrThrow({
         where: { id: matchId },
-        include: {
-            map: true,
-            draftSequence: { include: { steps: true } },
-            teams: {
-                include: {
-                    users: { include: { user: true } },
-                    picks: { include: { champion: true } },
-                    bans: { include: { champion: true } },
-                },
-            },
-        },
+        include: fullMatchInclude,
     });
 
     const totalSteps = match.draftSequence.steps.length * match.teams.length;

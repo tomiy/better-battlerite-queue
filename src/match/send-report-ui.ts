@@ -4,6 +4,7 @@ import { prisma } from '../config';
 import { tempReply } from '../interaction-utils';
 import { buildMatchEmbed } from './build-match-embed';
 import { buildReportButtons } from './build-match-ui';
+import { fullMatchInclude } from './match.type';
 import { tryMatchConclusion } from './try-match-conclusion';
 
 export async function sendReportUI(
@@ -15,17 +16,7 @@ export async function sendReportUI(
     const match = await prisma.match.update({
         where: { id: matchId },
         data: { state: 'ONGOING' },
-        include: {
-            map: true,
-            draftSequence: { include: { steps: true } },
-            teams: {
-                include: {
-                    users: { include: { user: true } },
-                    picks: { include: { champion: true } },
-                    bans: { include: { champion: true } },
-                },
-            },
-        },
+        include: fullMatchInclude,
     });
 
     const mainEmbed = buildMatchEmbed(match, guild);
@@ -85,16 +76,7 @@ export async function sendReportUI(
 
                 const updatedMatch = await prisma.match.findFirstOrThrow({
                     where: { id: match.id },
-                    include: {
-                        map: true,
-                        teams: {
-                            include: {
-                                users: { include: { user: true } },
-                                bans: { include: { champion: true } },
-                                picks: { include: { champion: true } },
-                            },
-                        },
-                    },
+                    include: fullMatchInclude,
                 });
 
                 const updatedEmbed = buildMatchEmbed(updatedMatch, guild);

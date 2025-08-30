@@ -5,23 +5,13 @@ import {
     Guild,
     userMention,
 } from 'discord.js';
-import { MatchDraftStep, MatchState, Prisma } from '../../.prisma';
+import { MatchDraftStep, MatchState } from '../../.prisma';
 import { championToChampionName } from '../data/championMappings';
 import { maptoMapName } from '../data/mapMappings';
+import { FullMatch } from './match.type';
 
 export function buildMatchEmbed(
-    match: Prisma.MatchGetPayload<{
-        include: {
-            map: true;
-            teams: {
-                include: {
-                    users: { include: { user: true } };
-                    bans: { include: { champion: true } };
-                    picks: { include: { champion: true } };
-                };
-            };
-        };
-    }>,
+    match: FullMatch,
     guild: Guild,
     currentDraftTeam?: number,
     draftStep?: MatchDraftStep,
