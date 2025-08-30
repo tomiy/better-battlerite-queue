@@ -100,7 +100,6 @@ export async function syncMembers(guild: Guild) {
         const finishedMatches = await prisma.match.updateManyAndReturn({
             where: { state: { notIn: ['DROPPED', 'FINISHED'] } },
             data: { state: 'DROPPED' },
-            include: fullMatchInclude,
         });
 
         for (const finishedMatch of finishedMatches) {
@@ -109,7 +108,12 @@ export async function syncMembers(guild: Guild) {
                     finishedMatch.matchHistoryMessage || '',
                 );
                 if (historyMessage) {
-                    const matchEmbed = buildMatchEmbed(finishedMatch, guild);
+                    const fullMatch = await prisma.match.findFirstOrThrow({
+                        where: { id: finishedMatch.id },
+                        include: fullMatchInclude,
+                    });
+
+                    const matchEmbed = buildMatchEmbed(fullMatch, guild);
 
                     await historyMessage.edit({
                         embeds: [matchEmbed],
