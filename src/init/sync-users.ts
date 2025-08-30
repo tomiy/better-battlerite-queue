@@ -1,6 +1,8 @@
-import { Guild, GuildMember } from 'discord.js';
+import { Guild, GuildMember, TextChannel } from 'discord.js';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
+import { buildMatchEmbed } from '../match/build-match-embed';
+import { fullMatchInclude } from '../match/match.type';
 
 export async function syncUsers(guild: Guild) {
     try {
@@ -91,10 +93,31 @@ export async function syncUsers(guild: Guild) {
 
         DebugUtils.debug('[Sync users] Dropping old matches...');
 
+        const matchHistoryChannel = guild.channels.cache.get(
+            dbGuild.matchHistoryChannel || '',
+        );
+
         const finishedMatches = await prisma.match.updateManyAndReturn({
             where: { state: { notIn: ['DROPPED', 'FINISHED'] } },
             data: { state: 'DROPPED' },
+            include: fullMatchInclude,
         });
+
+        for (const finishedMatch of finishedMatches) {
+            if (matchHistoryChannel instanceof TextChannel) {
+                const historyMessage = await matchHistoryChannel.messages.fetch(
+                    finishedMatch.matchHistoryMessage || '',
+                );
+                if (historyMessage) {
+                    const matchEmbed = buildMatchEmbed(finishedMatch, guild);
+
+                    await historyMessage.edit({
+                        embeds: [matchEmbed],
+                        components: [],
+                    });
+                }
+            }
+        }
 
         const finishedMatchesTeams = await prisma.matchTeam.findMany({
             where: { matchId: { in: finishedMatches.map((fm) => fm.id) } },

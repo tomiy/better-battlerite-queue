@@ -35,12 +35,16 @@ export async function sendReportUI(
     );
 
     if (matchHistoryChannel instanceof TextChannel) {
-        reportUIMessages.push(
-            await matchHistoryChannel.send({
-                embeds: [mainEmbed],
-                components: [reportButtons],
-            }),
-        );
+        const historyMessage = await matchHistoryChannel.send({
+            embeds: [mainEmbed],
+            components: [reportButtons],
+        });
+        reportUIMessages.push(historyMessage);
+
+        await prisma.match.update({
+            where: { id: matchId },
+            data: { matchHistoryMessage: historyMessage.id },
+        });
     }
 
     const allMatchUsers = match.teams.flatMap((t) => t.users);

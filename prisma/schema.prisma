@@ -78,7 +78,8 @@ model Match {
     draftSequenceId  Int
     currentDraftStep Int                @default(0)
 
-    teamWin Int?
+    matchHistoryMessage String?
+    teamWin             Int?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
