@@ -64,7 +64,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
 
     try {
         const submitted = await interaction.awaitModalSubmit({
-            time: 60000,
+            time: 600000,
             filter: (i) => i.user.id === interaction.user.id,
         });
 

@@ -9,7 +9,12 @@ import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { buildMatchEmbed } from './build-match-embed';
 import { buildDraftButtons, buildDraftSelectionLists } from './build-match-ui';
-import { checkCanDraft, processDraftStep } from './draft-functions';
+import {
+    canDraft,
+    clearCaptainClaimTimeouts,
+    processDraftStep,
+    tryClaimCaptain,
+} from './draft-functions';
 import { fullMatchInclude } from './match.type';
 import { sendReportUI } from './send-report-ui';
 
@@ -83,9 +88,9 @@ export async function sendDraftUI(
         draftUIMessages.push(draftUIMessage);
 
         if (currentDraftTeam === matchingTeam.order) {
-            await tc.send({
-                content: `${userMention(captain.member.discordId)} it's your turn to draft!`,
-            });
+            await tc.send(
+                `${userMention(captain.member.discordId)} it's your turn to draft!`,
+            );
         }
 
         const buttonCollector = draftUIMessage.createMessageComponentCollector({
@@ -97,14 +102,23 @@ export async function sendDraftUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
-            if (
-                !(await checkCanDraft(
+            if (i.customId === 'claimCaptainButton') {
+                tryClaimCaptain(
                     i,
                     captain,
                     currentDraftTeam,
                     matchingTeam,
-                ))
-            ) {
+                    match.id,
+                    guild,
+                    dbGuild,
+                    teamChannels,
+                    draftUIMessages,
+                    tc,
+                );
+                return;
+            }
+
+            if (!(await canDraft(i, captain, currentDraftTeam, matchingTeam))) {
                 return;
             }
 
@@ -117,26 +131,28 @@ export async function sendDraftUI(
 
             switch (i.customId) {
                 case 'meleeButton':
-                    i.update({ components: [categoryButtonsRow, row.melee] });
+                    clearCaptainClaimTimeouts(matchingTeam.id);
+                    await i.update({
+                        components: [categoryButtonsRow, row.melee],
+                    });
                     break;
                 case 'rangedButton':
-                    i.update({ components: [categoryButtonsRow, row.ranged] });
+                    clearCaptainClaimTimeouts(matchingTeam.id);
+                    await i.update({
+                        components: [categoryButtonsRow, row.ranged],
+                    });
                     break;
                 case 'supportButton':
-                    i.update({ components: [categoryButtonsRow, row.support] });
+                    clearCaptainClaimTimeouts(matchingTeam.id);
+                    await i.update({
+                        components: [categoryButtonsRow, row.support],
+                    });
                     break;
             }
         });
 
         selectCollector.on('collect', async (i) => {
-            if (
-                !(await checkCanDraft(
-                    i,
-                    captain,
-                    currentDraftTeam,
-                    matchingTeam,
-                ))
-            ) {
+            if (!(await canDraft(i, captain, currentDraftTeam, matchingTeam))) {
                 return;
             }
 
@@ -144,6 +160,7 @@ export async function sendDraftUI(
                 case 'meleeList':
                 case 'rangedList':
                 case 'supportList':
+                    clearCaptainClaimTimeouts(matchingTeam.id);
                     await processDraftStep(
                         match,
                         matchingTeam,

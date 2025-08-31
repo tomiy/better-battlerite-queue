@@ -109,10 +109,10 @@ export async function toggleRegion(
             });
 
             if (await leaveQueue(queuedMember, member, i, queueRoleId)) {
-                i.followUp({
+                await i.followUp({
                     content: 'No regions selected, unqueuing',
                     flags: MessageFlags.Ephemeral,
-                }).then((msg) => setTimeout(() => msg.delete(), 3000));
+                });
             }
         }
 

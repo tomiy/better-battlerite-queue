@@ -107,7 +107,7 @@ export async function syncMembers(guild: Guild) {
                 const historyMessage = await matchHistoryChannel.messages.fetch(
                     finishedMatch.matchHistoryMessage || '',
                 );
-                if (historyMessage) {
+                if (historyMessage.editable) {
                     const fullMatch = await prisma.match.findFirstOrThrow({
                         where: { id: finishedMatch.id },
                         include: fullMatchInclude,

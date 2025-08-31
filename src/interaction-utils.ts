@@ -4,18 +4,26 @@ import {
     MessageFlags,
     ModalSubmitInteraction,
 } from 'discord.js';
+import { DebugUtils } from './debug-utils';
 
 export async function tempReply(
     interaction:
         | MessageComponentInteraction
         | CommandInteraction
         | ModalSubmitInteraction,
-    reply: string,
+    message: string,
 ) {
-    interaction
-        .reply({
-            content: reply,
-            flags: MessageFlags.Ephemeral,
-        })
-        .then((m) => setTimeout(() => m.delete(), 3000));
+    const reply = await interaction.reply({
+        content: message,
+        flags: MessageFlags.Ephemeral,
+    });
+    setTimeout(async () => {
+        try {
+            await reply.delete();
+        } catch (e) {
+            DebugUtils.error(
+                `[Interaction Utils] Couldn't delete temp reply (${message}): ${e}`,
+            );
+        }
+    }, 3000);
 }

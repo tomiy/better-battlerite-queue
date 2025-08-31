@@ -23,10 +23,17 @@ export function buildDraftButtons() {
         .setCustomId('supportButton')
         .setLabel('Support')
         .setStyle(ButtonStyle.Primary);
+
+    const claimCaptainButton = new ButtonBuilder()
+        .setCustomId('claimCaptainButton')
+        .setLabel('Claim captain')
+        .setStyle(ButtonStyle.Danger);
+
     return new ActionRowBuilder<ButtonBuilder>()
         .addComponents(meleeButton)
         .addComponents(rangedButton)
-        .addComponents(supportButton);
+        .addComponents(supportButton)
+        .addComponents(claimCaptainButton);
 }
 
 export function buildReportButtons(teams: number) {
