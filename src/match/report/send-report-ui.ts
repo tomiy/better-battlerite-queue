@@ -1,11 +1,11 @@
 import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
-import { Guild as dbGuild } from '../../.prisma';
-import { prisma } from '../config';
-import { tempReply } from '../interaction-utils';
-import { buildMatchEmbed } from './build-match-embed';
-import { buildReportButtons } from './build-match-ui';
-import { fullMatchInclude } from './match.type';
-import { tryMatchConclusion } from './try-match-conclusion';
+import { Guild as dbGuild } from '../../../.prisma';
+import { prisma } from '../../config';
+import { tempReply } from '../../interaction-utils';
+import { buildMatchEmbed } from '../build-match-embed';
+import { buildReportButtons } from '../build-match-ui';
+import { fullMatchInclude } from '../match.type';
+import { tryMatchConclusion } from '../try-match-conclusion';
 
 export async function sendReportUI(
     matchId: number,

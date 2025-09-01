@@ -20,12 +20,12 @@ const data = new SlashCommandBuilder()
     .setDescription('Profile');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const initialUser = await prisma.member.findFirst({
+    const initialMember = await prisma.member.findFirst({
         where: { discordId: interaction.user.id, guildId: dbGuild.id },
         include: { regions: true },
     });
 
-    if (!initialUser) {
+    if (!initialMember) {
         tempReply(interaction, 'You are not registered! use /register');
         return;
     }
@@ -40,7 +40,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
         .setLabel('Battlerite username')
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-        .setValue(initialUser.inGameName);
+        .setValue(initialMember.inGameName);
     const inGameNameRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             inGameNameInput,
@@ -54,7 +54,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
         )
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(false)
-        .setValue(initialUser.description || '');
+        .setValue(initialMember.description || '');
     const descriptionRow =
         new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
             descriptionInput,
@@ -66,7 +66,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
 
     try {
         const submitted = await interaction.awaitModalSubmit({
-            time: 60000,
+            time: 600000,
             filter: (i) => i.user.id === interaction.user.id,
         });
 
@@ -76,7 +76,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const description =
                 submitted.fields.getTextInputValue('descriptionInput');
 
-            const user = await prisma.member.update({
+            const member = await prisma.member.update({
                 where: {
                     discordId: interaction.user.id,
                     guildId: dbGuild.id,
@@ -87,7 +87,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 },
             });
 
-            if (user) {
+            if (member) {
                 tempReply(submitted, 'Profile updated!');
             }
         }

@@ -19,14 +19,16 @@ const data = new SlashCommandBuilder()
 
 async function execute(interaction: CommandInteraction) {
     if (!interaction.isChatInputCommand()) {
-        DebugUtils.error('[Queue Reset] Invalid context, should never happen');
+        DebugUtils.error(
+            '[Queue Actions] Invalid context, should never happen',
+        );
         return;
     }
 
     const guild = interaction.guild;
 
     if (!guild) {
-        DebugUtils.error('[Queue Reset] No guild, should never happen');
+        DebugUtils.error('[Queue Actions] No guild, should never happen');
         return;
     }
 
@@ -37,7 +39,7 @@ async function execute(interaction: CommandInteraction) {
     const queueRole = dbGuild.queueRole;
 
     if (queueRole === null) {
-        throw new Error('[Queue Reset] No queue role found, check bot logs');
+        throw new Error('[Queue Actions] No queue role found, check bot logs');
     }
 
     if (interaction.options.getSubcommand() === 'reset') {
@@ -48,11 +50,13 @@ async function execute(interaction: CommandInteraction) {
         );
 
         if (queuedMembers.size) {
-            DebugUtils.debug('[Queue Reset] Purging old queued members...');
+            DebugUtils.debug('[Queue Actions] Purging old queued members...');
 
-            queuedMembers.forEach(async (m) => await m.roles.remove(queueRole));
+            for (const m of queuedMembers.values()) {
+                await m.roles.remove(queueRole);
+            }
 
-            DebugUtils.debug('[Queue Reset] Purged old queued members');
+            DebugUtils.debug('[Queue Actions] Purged old queued members');
         }
 
         await prisma.queue.deleteMany({

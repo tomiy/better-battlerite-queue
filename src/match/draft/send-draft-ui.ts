@@ -5,18 +5,18 @@ import {
     TextChannel,
     userMention,
 } from 'discord.js';
-import { Guild as dbGuild } from '../../.prisma';
-import { prisma } from '../config';
-import { buildMatchEmbed } from './build-match-embed';
-import { buildDraftButtons, buildDraftSelectionLists } from './build-match-ui';
+import { Guild as dbGuild } from '../../../.prisma';
+import { prisma } from '../../config';
+import { buildMatchEmbed } from '../build-match-embed';
+import { buildDraftButtons, buildDraftSelectionLists } from '../build-match-ui';
+import { fullMatchInclude } from '../match.type';
+import { sendReportUI } from '../report/send-report-ui';
 import {
     canDraft,
     clearCaptainClaimTimeouts,
     processDraftStep,
     tryClaimCaptain,
 } from './draft-functions';
-import { fullMatchInclude } from './match.type';
-import { sendReportUI } from './send-report-ui';
 
 export async function sendDraftUI(
     matchId: number,

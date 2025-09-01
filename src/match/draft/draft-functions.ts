@@ -13,9 +13,9 @@ import {
     MatchTeam,
     Prisma,
     Guild as dbGuild,
-} from '../../.prisma';
-import { prisma } from '../config';
-import { tempReply } from '../interaction-utils';
+} from '../../../.prisma';
+import { prisma } from '../../config';
+import { tempReply } from '../../interaction-utils';
 import { sendDraftUI } from './send-draft-ui';
 
 export async function canDraft(

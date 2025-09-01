@@ -21,11 +21,11 @@ const data = new SlashCommandBuilder()
     .setDescription('Register');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
-    const user = await prisma.member.findFirst({
+    const member = await prisma.member.findFirst({
         where: { discordId: interaction.user.id, guildId: dbGuild.id },
     });
 
-    if (user) {
+    if (member) {
         tempReply(interaction, 'You are already registered!');
         return;
     }
@@ -74,7 +74,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             const description =
                 submitted.fields.getTextInputValue('descriptionInput');
 
-            const user = await prisma.member.create({
+            const member = await prisma.member.create({
                 data: {
                     discordId: interaction.user.id,
                     guildId: dbGuild.id,
@@ -83,7 +83,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 },
             });
 
-            if (user) {
+            if (member) {
                 await (interaction.member as GuildMember)?.roles.add(
                     dbGuild.registeredRole!,
                 );

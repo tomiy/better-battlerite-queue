@@ -2,8 +2,8 @@ import { Guild } from 'discord.js';
 import { Guild as dbGuild, Prisma, Region } from '../../.prisma';
 import { defaultDraftSequenceName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
-import { getTeamAverageElo } from './compute-rating-changes';
-import { initDraft } from './init-draft';
+import { initDraft } from './draft/init-draft';
+import { getTeamAverageElo } from './rating-functions';
 
 const validRegionStrings = Object.values(Region);
 

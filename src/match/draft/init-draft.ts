@@ -5,9 +5,9 @@ import {
     PermissionsBitField,
     TextChannel,
 } from 'discord.js';
-import { MatchPlayer, Member, Guild as dbGuild } from '../../.prisma';
-import { categoryChannelName, prisma } from '../config';
-import { DebugUtils } from '../debug-utils';
+import { MatchPlayer, Member, Guild as dbGuild } from '../../../.prisma';
+import { categoryChannelName, prisma } from '../../config';
+import { DebugUtils } from '../../debug-utils';
 import { sendDraftUI } from './send-draft-ui';
 import { sendPlayerUI } from './send-player-ui';
 

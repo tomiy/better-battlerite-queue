@@ -3,8 +3,8 @@ import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { buildMatchEmbed } from './build-match-embed';
-import { computeRatingChanges } from './compute-rating-changes';
 import { FullMatch, fullMatchInclude } from './match.type';
+import { computeRatingChanges } from './rating-functions';
 
 export async function tryMatchConclusion(
     match: FullMatch,

@@ -6,7 +6,9 @@ import { fullMatchInclude } from '../match/match.type';
 
 export async function syncMembers(guild: Guild) {
     try {
-        DebugUtils.debug(`[Sync users] Syncing users for guild ${guild.id}`);
+        DebugUtils.debug(
+            `[Sync Members] Syncing members for guild ${guild.id}`,
+        );
 
         const dbGuild = await prisma.guild.findFirstOrThrow({
             where: { guildDiscordId: guild.id },
@@ -17,29 +19,33 @@ export async function syncMembers(guild: Guild) {
         const registeredRole = dbGuild.registeredRole;
 
         if (queueRole === null) {
-            throw new Error('[Sync users] No queue role found, check bot logs');
+            throw new Error(
+                '[Sync Members] No queue role found, check bot logs',
+            );
         }
 
         if (matchRole === null) {
-            throw new Error('[Sync users] No match role found, check bot logs');
+            throw new Error(
+                '[Sync Members] No match role found, check bot logs',
+            );
         }
 
         if (registeredRole === null) {
             throw new Error(
-                '[Sync users] No registered role found, check bot logs',
+                '[Sync Members] No registered role found, check bot logs',
             );
         }
 
         const members = await guild.members.fetch();
 
         const syncedMembers: GuildMember[] = [];
-        const dbUsers = await prisma.member.findMany({
+        const dbMembers = await prisma.member.findMany({
             where: { guild: { guildDiscordId: guild.id } },
         });
 
-        for (const dbUser of dbUsers) {
+        for (const dbMember of dbMembers) {
             const matchingMember = members.find(
-                (m) => m.id === dbUser.discordId,
+                (m) => m.id === dbMember.discordId,
             );
 
             if (
@@ -52,16 +58,16 @@ export async function syncMembers(guild: Guild) {
             }
         }
 
-        for (const [clientUserId, clientUser] of members) {
+        for (const [clientMemberId, clientMember] of members) {
             const syncedMember = syncedMembers.find(
-                (syncedMember) => syncedMember.id === clientUserId,
+                (syncedMember) => syncedMember.id === clientMemberId,
             );
-            const dbUser = dbUsers.find(
-                (dbUser) => dbUser.discordId === clientUserId,
+            const dbMember = dbMembers.find(
+                (dbmember) => dbmember.discordId === clientMemberId,
             );
 
-            if (!syncedMember && !dbUser) {
-                clientUser.roles.remove(registeredRole);
+            if (!syncedMember && !dbMember) {
+                clientMember.roles.remove(registeredRole);
             }
         }
 
@@ -70,11 +76,13 @@ export async function syncMembers(guild: Guild) {
         );
 
         if (queuedMembers.size) {
-            DebugUtils.debug('[Sync users] Purging old queued users...');
+            DebugUtils.debug('[Sync Members] Purging old queued members...');
 
-            queuedMembers.forEach(async (m) => await m.roles.remove(queueRole));
+            for (const m of queuedMembers.values()) {
+                await m.roles.remove(queueRole);
+            }
 
-            DebugUtils.debug('[Sync users] Purged old queued users');
+            DebugUtils.debug('[Sync Members] Purged old queued members');
         }
 
         const matchedMembers = members.filter((m) =>
@@ -82,16 +90,16 @@ export async function syncMembers(guild: Guild) {
         );
 
         if (matchedMembers.size) {
-            DebugUtils.debug('[Sync users] Purging old matched users...');
+            DebugUtils.debug('[Sync Members] Purging old matched members...');
 
-            matchedMembers.forEach(
-                async (m) => await m.roles.remove(matchRole),
-            );
+            for (const m of matchedMembers.values()) {
+                await m.roles.remove(matchRole);
+            }
 
-            DebugUtils.debug('[Sync users] Purged old matched users');
+            DebugUtils.debug('[Sync Members] Purged old matched members');
         }
 
-        DebugUtils.debug('[Sync users] Dropping old matches...');
+        DebugUtils.debug('[Sync Members] Dropping old matches...');
 
         const matchHistoryChannel = guild.channels.cache.get(
             dbGuild.matchHistoryChannel || '',
@@ -104,21 +112,24 @@ export async function syncMembers(guild: Guild) {
 
         for (const finishedMatch of finishedMatches) {
             if (matchHistoryChannel instanceof TextChannel) {
-                const historyMessage = await matchHistoryChannel.messages.fetch(
-                    finishedMatch.matchHistoryMessage || '',
-                );
-                if (historyMessage.editable) {
-                    const fullMatch = await prisma.match.findFirstOrThrow({
-                        where: { id: finishedMatch.id },
-                        include: fullMatchInclude,
-                    });
+                if (finishedMatch.matchHistoryMessage) {
+                    const historyMessage =
+                        await matchHistoryChannel.messages.fetch(
+                            finishedMatch.matchHistoryMessage,
+                        );
+                    if (historyMessage.editable) {
+                        const fullMatch = await prisma.match.findFirstOrThrow({
+                            where: { id: finishedMatch.id },
+                            include: fullMatchInclude,
+                        });
 
-                    const matchEmbed = buildMatchEmbed(fullMatch, guild);
+                        const matchEmbed = buildMatchEmbed(fullMatch, guild);
 
-                    await historyMessage.edit({
-                        embeds: [matchEmbed],
-                        components: [],
-                    });
+                        await historyMessage.edit({
+                            embeds: [matchEmbed],
+                            components: [],
+                        });
+                    }
                 }
             }
         }
@@ -133,12 +144,12 @@ export async function syncMembers(guild: Guild) {
             }
         }
 
-        DebugUtils.debug('[Sync users] Dropped old matches');
+        DebugUtils.debug('[Sync Members] Dropped old matches');
 
         DebugUtils.debug(
-            `[Sync users] Successfully synced users for guild ${guild.id}`,
+            `[Sync Members] Successfully synced members for guild ${guild.id}`,
         );
     } catch (e) {
-        DebugUtils.error(`[Sync users] Error: ${e}`);
+        DebugUtils.error(`[Sync Members] Error: ${e}`);
     }
 }
