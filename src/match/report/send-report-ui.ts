@@ -1,4 +1,10 @@
-import { ComponentType, Guild, Message, TextChannel } from 'discord.js';
+import {
+    ComponentType,
+    Guild,
+    Message,
+    MessageFlags,
+    TextChannel,
+} from 'discord.js';
 import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
 import { tempReply } from '../../interaction-utils';
@@ -55,6 +61,8 @@ export async function sendReportUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
+            await i.deferReply({ flags: MessageFlags.Ephemeral });
+
             const matchingPlayer = allPlayers.find(
                 (u) => u.member.discordId === i.member.id,
             );
@@ -92,7 +100,7 @@ export async function sendReportUI(
                     });
                 }
 
-                tempReply(i, 'Vote registered!');
+                await tempReply(i, 'Vote registered!');
 
                 await tryMatchConclusion(
                     updatedMatch,
@@ -104,7 +112,7 @@ export async function sendReportUI(
                 return;
             }
 
-            tempReply(i, 'You are not in this match!');
+            await tempReply(i, 'You are not in this match!');
         });
     }
 }

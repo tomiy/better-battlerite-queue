@@ -17,12 +17,12 @@ export async function joinQueue(
     });
 
     if (player) {
-        tempReply(i, 'You are in a match!');
+        await tempReply(i, 'You are in a match!');
         return false;
     }
 
     if (queuedMember) {
-        tempReply(i, 'You are already in queue!');
+        await tempReply(i, 'You are already in queue!');
         return false;
     }
 
@@ -31,13 +31,13 @@ export async function joinQueue(
     });
 
     if (!memberRegion) {
-        tempReply(i, 'You need to enable at least one region to queue!');
+        await tempReply(i, 'You need to enable at least one region to queue!');
         return false;
     }
 
     await prisma.queue.create({ data: { memberId: member.id } });
     await i.member.roles.add(queueRoleId);
-    tempReply(i, 'Queue joined!');
+    await tempReply(i, 'Queue joined!');
 
     return true;
 }
@@ -49,7 +49,7 @@ export async function leaveQueue(
 ) {
     if (!queuedMember) {
         if (!i.replied) {
-            tempReply(i, 'You are not in queue!');
+            await tempReply(i, 'You are not in queue!');
         }
         return false;
     }
@@ -58,7 +58,7 @@ export async function leaveQueue(
     await i.member.roles.remove(queueRoleId);
 
     if (!i.replied) {
-        tempReply(i, 'Queue left!');
+        await tempReply(i, 'Queue left!');
     }
 
     return true;
@@ -85,7 +85,7 @@ export async function toggleRegion(
             throw new Error('[Launch command] Could not create member region!');
         }
 
-        tempReply(i, `Region ${region} enabled!`);
+        await tempReply(i, `Region ${region} enabled!`);
 
         return true;
     } else {
@@ -97,7 +97,7 @@ export async function toggleRegion(
             throw new Error('[Launch command] Could not delete member region!');
         }
 
-        tempReply(i, `Region ${region} disabled!`);
+        await tempReply(i, `Region ${region} disabled!`);
 
         const memberRegion = await prisma.memberRegion.findFirst({
             where: { memberId: member.id },

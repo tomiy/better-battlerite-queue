@@ -25,17 +25,18 @@ export async function canDraft(
     team: MatchTeam,
 ) {
     if (i.member.id !== captain?.member.discordId) {
-        tempReply(i, 'You are not captain!');
+        await tempReply(i, 'You are not captain!');
         return false;
     }
 
     if (currentDraftTeam !== team.order) {
-        tempReply(i, 'It is not your turn to draft!');
+        await tempReply(i, 'It is not your turn to draft!');
         return false;
     }
 
     return true;
 }
+
 export async function sendNextStep(
     match: Match,
     guild: Guild,
@@ -97,7 +98,7 @@ export async function processDraftStep(
     }
 
     if (updated) {
-        tempReply(i, 'Draft action registered!');
+        await tempReply(i, 'Draft action registered!');
         await sendNextStep(
             match,
             guild,
@@ -128,7 +129,7 @@ export async function tryClaimCaptain(
     }
 
     if (currentDraftTeam !== team.order) {
-        tempReply(i, 'You can only claim captain on your turn!');
+        await tempReply(i, 'You can only claim captain on your turn!');
     }
 
     if (captainClaimTimeouts.get(team.id)) {
@@ -167,7 +168,7 @@ export async function tryClaimCaptain(
                         the player making the request will be appointed as new captain.`,
     );
 
-    tempReply(i, 'Claim registered!');
+    await tempReply(i, 'Claim registered!');
 }
 
 async function claimCaptain(newCaptain: MatchPlayer, oldCaptain: MatchPlayer) {

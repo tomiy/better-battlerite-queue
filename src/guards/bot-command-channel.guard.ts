@@ -14,11 +14,14 @@ export const botCommandsChannel: GuardFunction = async (
     const botCommandsChannel = guild.botCommandsChannel;
 
     if (botCommandsChannel === null) {
-        tempReply(interaction, 'No bot commands channel found, check bot logs');
+        await tempReply(
+            interaction,
+            'No bot commands channel found, check bot logs',
+        );
         return false;
     }
 
-    tempReply(
+    await tempReply(
         interaction,
         `Invalid context, you must use ${channelMention(botCommandsChannel)}`,
     );

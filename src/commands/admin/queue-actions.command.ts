@@ -1,4 +1,8 @@
-import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import {
+    CommandInteraction,
+    MessageFlags,
+    SlashCommandBuilder,
+} from 'discord.js';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
@@ -18,6 +22,8 @@ const data = new SlashCommandBuilder()
     .setDescription('Queue admin functions') as SlashCommandBuilder;
 
 async function execute(interaction: CommandInteraction) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     if (!interaction.isChatInputCommand()) {
         DebugUtils.error(
             '[Queue Actions] Invalid context, should never happen',
@@ -63,7 +69,7 @@ async function execute(interaction: CommandInteraction) {
             where: { member: { guild: { guildDiscordId: guild.id } } },
         });
 
-        tempReply(interaction, 'Queue reset!');
+        await tempReply(interaction, 'Queue reset!');
     }
 
     if (interaction.options.getSubcommand() === 'fill') {
@@ -73,7 +79,7 @@ async function execute(interaction: CommandInteraction) {
             data: allMembers.map((m) => ({ memberId: m.id })),
         });
 
-        tempReply(interaction, 'Queue filled!');
+        await tempReply(interaction, 'Queue filled!');
     }
 }
 

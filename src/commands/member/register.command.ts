@@ -26,12 +26,12 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     });
 
     if (member) {
-        tempReply(interaction, 'You are already registered!');
+        await tempReply(interaction, 'You are already registered!');
         return;
     }
 
     const registerModal = new ModalBuilder()
-        .setCustomId('registerModal')
+        .setCustomId(`registerModal-${interaction.id}`)
         .setTitle('Registration form')
         .addComponents();
 
@@ -65,7 +65,9 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     try {
         const submitted = await interaction.awaitModalSubmit({
             time: 600000,
-            filter: (i) => i.user.id === interaction.user.id,
+            filter: (i) =>
+                i.user.id === interaction.user.id &&
+                i.customId === `registerModal-${interaction.id}`,
         });
 
         if (submitted) {
@@ -83,14 +85,20 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
                 },
             });
 
-            if (member) {
+            if (member.id) {
+                if (!dbGuild.registeredRole) {
+                    throw new Error(
+                        '[Register] No registered role, check bot logs',
+                    );
+                }
+
                 await (interaction.member as GuildMember)?.roles.add(
-                    dbGuild.registeredRole!,
+                    dbGuild.registeredRole,
                 );
-                tempReply(submitted, 'You are now registered!');
+                await tempReply(submitted, 'You are now registered!');
             }
         } else {
-            tempReply(
+            await tempReply(
                 interaction,
                 'Something went wrong with the registration modal :/',
             );

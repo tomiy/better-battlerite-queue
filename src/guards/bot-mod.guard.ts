@@ -18,7 +18,7 @@ export const botModGuard: GuardFunction = async (
             ? roleMention(botModRole)
             : 'the bot moderator';
 
-        tempReply(
+        await tempReply(
             interaction,
             `Invalid context, you must have the ${botModRoleMention} role`,
         );

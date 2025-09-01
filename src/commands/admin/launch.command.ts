@@ -5,6 +5,7 @@ import {
     channelMention,
     CommandInteraction,
     ComponentType,
+    MessageFlags,
     SlashCommandBuilder,
     TextChannel,
 } from 'discord.js';
@@ -23,6 +24,8 @@ const data = new SlashCommandBuilder()
     .setDescription('Starts the queue');
 
 async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
     const botCommandsChannelId = dbGuild.botCommandsChannel;
     const queueChannelId = dbGuild.queueChannel;
     const queueRoleId = dbGuild.queueRole;
@@ -45,8 +48,11 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
 
     const queueChannel = interaction.client.channels.cache.get(queueChannelId);
 
-    if (!queueChannelId) {
-        tempReply(interaction, 'Queue channel does not exist, check settings');
+    if (!queueChannel) {
+        await tempReply(
+            interaction,
+            'Queue channel does not exist, check settings',
+        );
         return;
     }
 
@@ -91,12 +97,14 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
         });
 
         buttonCollector?.on('collect', async (i) => {
+            await i.deferReply({ flags: MessageFlags.Ephemeral });
+
             const member = await prisma.member.findFirst({
                 where: { discordId: i.member.id, guildId: dbGuild.id },
             });
 
             if (!member) {
-                tempReply(
+                await tempReply(
                     i,
                     `You are not registered! Use /register in ${channelMention(botCommandsChannelId)}`,
                 );
@@ -134,9 +142,9 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             }
         });
 
-        tempReply(interaction, 'Queue has been launched!');
+        await tempReply(interaction, 'Queue has been launched!');
     } else {
-        tempReply(
+        await tempReply(
             interaction,
             'Cannot send messages to queue channel, check bot permissions!',
         );

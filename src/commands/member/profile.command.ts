@@ -26,12 +26,12 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     });
 
     if (!initialMember) {
-        tempReply(interaction, 'You are not registered! use /register');
+        await tempReply(interaction, 'You are not registered! use /register');
         return;
     }
 
     const profileModal = new ModalBuilder()
-        .setCustomId('profileModal')
+        .setCustomId(`profileModal-${interaction.id}`)
         .setTitle('Profile form')
         .addComponents();
 
@@ -67,7 +67,9 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
     try {
         const submitted = await interaction.awaitModalSubmit({
             time: 600000,
-            filter: (i) => i.user.id === interaction.user.id,
+            filter: (i) =>
+                i.user.id === interaction.user.id &&
+                i.customId === `profileModal-${interaction.id}`,
         });
 
         if (submitted) {
@@ -88,7 +90,7 @@ async function execute(interaction: CommandInteraction, dbGuild: dbGuild) {
             });
 
             if (member) {
-                tempReply(submitted, 'Profile updated!');
+                await tempReply(submitted, 'Profile updated!');
             }
         }
     } catch (e) {

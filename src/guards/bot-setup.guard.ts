@@ -15,7 +15,7 @@ export const botSetup: GuardFunction = async (
         !guild.registeredRole ||
         !guild.queueRole
     ) {
-        tempReply(interaction, 'Bot is not setup, check logs');
+        await tempReply(interaction, 'Bot is not setup, check logs');
         return false;
     }
 

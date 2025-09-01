@@ -2,6 +2,7 @@ import {
     ComponentType,
     Guild,
     Message,
+    MessageFlags,
     TextChannel,
     userMention,
 } from 'discord.js';
@@ -103,6 +104,8 @@ export async function sendDraftUI(
 
         buttonCollector?.on('collect', async (i) => {
             if (i.customId === 'claimCaptainButton') {
+                await i.deferReply({ flags: MessageFlags.Ephemeral });
+
                 tryClaimCaptain(
                     i,
                     captain,
@@ -122,6 +125,8 @@ export async function sendDraftUI(
                 return;
             }
 
+            await i.deferUpdate();
+
             const row = buildDraftSelectionLists(
                 match,
                 matchingTeam,
@@ -132,19 +137,19 @@ export async function sendDraftUI(
             switch (i.customId) {
                 case 'meleeButton':
                     clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.update({
+                    await i.editReply({
                         components: [categoryButtonsRow, row.melee],
                     });
                     break;
                 case 'rangedButton':
                     clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.update({
+                    await i.editReply({
                         components: [categoryButtonsRow, row.ranged],
                     });
                     break;
                 case 'supportButton':
                     clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.update({
+                    await i.editReply({
                         components: [categoryButtonsRow, row.support],
                     });
                     break;
@@ -152,6 +157,8 @@ export async function sendDraftUI(
         });
 
         selectCollector.on('collect', async (i) => {
+            await i.deferReply({ flags: MessageFlags.Ephemeral });
+
             if (!(await canDraft(i, captain, currentDraftTeam, matchingTeam))) {
                 return;
             }

@@ -101,8 +101,14 @@ export async function syncMembers(guild: Guild) {
 
         DebugUtils.debug('[Sync Members] Dropping old matches...');
 
+        if (!dbGuild.matchHistoryChannel) {
+            throw new Error(
+                '[Sync Members] No match history channel, check logs',
+            );
+        }
+
         const matchHistoryChannel = guild.channels.cache.get(
-            dbGuild.matchHistoryChannel || '',
+            dbGuild.matchHistoryChannel,
         );
 
         const finishedMatches = await prisma.match.updateManyAndReturn({

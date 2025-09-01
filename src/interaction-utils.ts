@@ -13,13 +13,17 @@ export async function tempReply(
         | ModalSubmitInteraction,
     message: string,
 ) {
-    const reply = await interaction.reply({
-        content: message,
-        flags: MessageFlags.Ephemeral,
-    });
+    if (interaction.deferred) {
+        await interaction.editReply(message);
+    } else {
+        await interaction.reply({
+            content: message,
+            flags: MessageFlags.Ephemeral,
+        });
+    }
     setTimeout(async () => {
         try {
-            await reply.delete();
+            await interaction.deleteReply();
         } catch (e) {
             DebugUtils.error(
                 `[Interaction Utils] Couldn't delete temp reply (${message}): ${e}`,
