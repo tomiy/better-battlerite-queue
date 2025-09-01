@@ -50,7 +50,9 @@
 
 A discord bot to organize private games for <a href="https://arena.battlerite.com/">Battlerite Arena</a>.
 
-more fleshed out description tbd.
+Features a queue with regions, a draft & a match report system.
+
+Tracks players ratings and creates balanced matches.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -80,11 +82,7 @@ To get a local copy up and running follow these steps.
     ```sh
     npm run migrate
     ```
-5. Generate the Prisma client
-    ```sh
-    npm run generate
-    ```
-6. Start the bot
+5. Start the bot
     ```sh
     npm run dev
     ```
@@ -94,7 +92,21 @@ To get a local copy up and running follow these steps.
 
 ## Usage
 
-tbd.
+The bot auto-syncs guilds, channels, roles & members between discord servers and the internal db to ensure minimal required setup: just add it to the server and launch the queue!
+
+A `Bot Moderator` role will be created automatically. The bot recognizes this role as authorized for admin commands.
+
+Bot Moderators will need to `/launch` the queue whenever the bot (re)starts to create the queue options.
+
+Players will need to `/register` with an in game username and enable at least one region to queue.
+
+Players can edit their `/profile` at any time.
+
+During the draft, team captains can choose a champions to pick or ban from the lists available through the category buttons.
+
+During the team's turn, if the captain is unresponsive, other team members may claim the captain role after a 1 minute timeout.
+
+After the draft, players may report the match's outcome by voting for the option with the buttons provided.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -102,7 +114,20 @@ tbd.
 
 ## Roadmap
 
-tbd.
+TODO:
+
+- Drop during draft
+- Seasons
+- Champ & Map modals to edit restrictions & weights
+- User profiles (w/ graphs: **low prio**)
+- Leaderboards
+- Manage draft sequences
+
+MAYBE:
+
+- Player draft
+- Buttons instead of commands for most stuff
+- Poll queue instead of Event driven (prevents match collisions but obligatory wait times)
 
 See the [open issues](https://github.com/tomiy/better-battlerite-queue/issues) for a full list of proposed features (and known issues).
 
@@ -147,7 +172,7 @@ Project Link: [https://github.com/tomiy/better-battlerite-queue](https://github.
 
 ## Acknowledgments
 
-tbd.
+[Ehri/Xeyth](https://github.com/Xeythhhh) and anyone who has worked on the now unmaintained [BCL](https://github.com/Xeythhhh/Battlerite-Community-League) bot for their huge kickstart help and inspiration.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
