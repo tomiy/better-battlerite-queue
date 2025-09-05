@@ -8,10 +8,10 @@ import {
 import { MatchDraftStep, MatchState } from '../../.prisma';
 import { championToChampionName } from '../data/championMappings';
 import { maptoMapName } from '../data/mapMappings';
-import { FullMatch } from './match.type';
+import { MatchRepository } from '../repository/match.repository';
 
 export function buildMatchEmbed(
-    match: FullMatch,
+    match: MatchRepository,
     guild: Guild,
     currentDraftTeam?: number,
     draftStep?: MatchDraftStep,
@@ -62,15 +62,15 @@ export function buildMatchEmbed(
         };
     });
 
-    const mapName = maptoMapName.get(match.map.map) || 'Unknown';
-    const mapVariantName = match.map.variant === 'DAY' ? 'Day' : 'Night';
+    const mapName = maptoMapName.get(match.data.map.map) || 'Unknown';
+    const mapVariantName = match.data.map.variant === 'DAY' ? 'Day' : 'Night';
 
     const infoFields: APIEmbedField[] = [
         { name: 'Map', value: `${mapName} ${mapVariantName}` },
     ];
 
     if (
-        match.state === 'DRAFT' &&
+        match.data.state === 'DRAFT' &&
         currentDraftTeam !== undefined &&
         draftStep !== undefined
     ) {
@@ -101,19 +101,12 @@ export function buildMatchEmbed(
         });
     }
 
-    if (match.state === 'ONGOING') {
-        const players = match.teams.flatMap((t) => t.players);
-        const winReports = Object.groupBy(players, (u) =>
-            u.teamWinReport !== null ? u.teamWinReport : -1,
-        );
-        const dropReportCount = players
-            .map((u) => u.dropReport)
-            .filter((r) => r === true).length;
-
+    if (match.data.state === 'ONGOING') {
         const reportStrings: string[] = match.teams.map(
-            (t) => `Team ${t.order + 1}: ${winReports[t.order]?.length || 0}`,
+            (t) =>
+                `Team ${t.order + 1}: ${match.winReportCounts.get(t.order) || 0}`,
         );
-        reportStrings.push(`Drop: ${dropReportCount}`);
+        reportStrings.push(`Drop: ${match.dropReportCount}`);
 
         footerFields.push({
             name: 'Match Reports',
@@ -121,7 +114,7 @@ export function buildMatchEmbed(
         });
     }
 
-    if (match.state === 'FINISHED' && match.teamWin !== null) {
+    if (match.data.state === 'FINISHED' && match.data.teamWin !== null) {
         const playersRatingChange = match.teams.flatMap((t) =>
             t.players.map((p) => p.ratingChange),
         );
@@ -129,12 +122,12 @@ export function buildMatchEmbed(
             playersRatingChange.reduce((a, b) => Math.abs(a) + Math.abs(b)) /
             playersRatingChange.length;
         footerFields.push({
-            name: `Team ${match.teamWin + 1} wins!`,
+            name: `Team ${match.data.teamWin + 1} wins!`,
             value: `Average rating change: ${averageRatingChange}`,
         });
     }
 
-    if (match.state === 'DROPPED') {
+    if (match.data.state === 'DROPPED') {
         footerFields.push({
             name: 'Match Dropped',
             value: 'No rating changes',
@@ -143,10 +136,10 @@ export function buildMatchEmbed(
 
     return new EmbedBuilder()
         .setAuthor({
-            name: `Match #${match.id}`,
+            name: `Match #${match.data.id}`,
             iconURL: guild.iconURL() || '',
         })
-        .setColor(getEmbedColor(match.state))
+        .setColor(getEmbedColor(match.data.state))
         .addFields(teamsFields)
         .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields
         .addFields(infoFields)

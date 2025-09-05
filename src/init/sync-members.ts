@@ -2,7 +2,7 @@ import { Guild, GuildMember, TextChannel } from 'discord.js';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { buildMatchEmbed } from '../match/build-match-embed';
-import { fullMatchInclude } from '../match/match.type';
+import { MatchRepository } from '../repository/match.repository';
 
 export async function syncMembers(guild: Guild) {
     try {
@@ -124,10 +124,9 @@ export async function syncMembers(guild: Guild) {
                             finishedMatch.matchHistoryMessage,
                         );
                     if (historyMessage.editable) {
-                        const fullMatch = await prisma.match.findFirstOrThrow({
-                            where: { id: finishedMatch.id },
-                            include: fullMatchInclude,
-                        });
+                        const fullMatch = await MatchRepository.get(
+                            finishedMatch.id,
+                        );
 
                         const matchEmbed = buildMatchEmbed(fullMatch, guild);
 

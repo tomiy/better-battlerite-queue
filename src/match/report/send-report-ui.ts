@@ -6,24 +6,19 @@ import {
     TextChannel,
 } from 'discord.js';
 import { Guild as dbGuild } from '../../../.prisma';
-import { prisma } from '../../config';
 import { tempReply } from '../../interaction-utils';
+import { MatchRepository } from '../../repository/match.repository';
 import { buildMatchEmbed } from '../build-match-embed';
 import { buildReportButtons } from '../build-match-ui';
-import { fullMatchInclude } from '../match.type';
 import { tryMatchConclusion } from '../try-match-conclusion';
 
 export async function sendReportUI(
-    matchId: number,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
 ) {
-    const match = await prisma.match.update({
-        where: { id: matchId },
-        data: { state: 'ONGOING' },
-        include: fullMatchInclude,
-    });
+    await match.update({ state: 'ONGOING' });
 
     const mainEmbed = buildMatchEmbed(match, guild);
     const reportButtons = buildReportButtons(match.teams.length);
@@ -47,13 +42,8 @@ export async function sendReportUI(
         });
         reportUIMessages.push(historyMessage);
 
-        await prisma.match.update({
-            where: { id: matchId },
-            data: { matchHistoryMessage: historyMessage.id },
-        });
+        await match.update({ matchHistoryMessage: historyMessage.id });
     }
-
-    const allPlayers = match.teams.flatMap((t) => t.players);
 
     for (const reportMessage of reportUIMessages) {
         const buttonCollector = reportMessage.createMessageComponentCollector({
@@ -63,35 +53,27 @@ export async function sendReportUI(
         buttonCollector?.on('collect', async (i) => {
             await i.deferReply({ flags: MessageFlags.Ephemeral });
 
-            const matchingPlayer = allPlayers.find(
+            const matchingPlayer = match.players.find(
                 (u) => u.member.discordId === i.member.id,
             );
             if (matchingPlayer) {
                 if (i.customId === 'reportButtonDrop') {
-                    await prisma.matchPlayer.update({
-                        where: { id: matchingPlayer.id },
-                        data: { teamWinReport: null, dropReport: true },
+                    await match.updatePlayer(matchingPlayer.id, {
+                        teamWinReport: null,
+                        dropReport: true,
                     });
                 } else {
                     const teamWinReport = parseInt(
                         i.customId.replace(/[^0-9]/g, ''),
                     );
 
-                    await prisma.matchPlayer.update({
-                        where: { id: matchingPlayer.id },
-                        data: {
-                            teamWinReport: teamWinReport,
-                            dropReport: false,
-                        },
+                    await match.updatePlayer(matchingPlayer.id, {
+                        teamWinReport: teamWinReport,
+                        dropReport: false,
                     });
                 }
 
-                const updatedMatch = await prisma.match.findFirstOrThrow({
-                    where: { id: match.id },
-                    include: fullMatchInclude,
-                });
-
-                const updatedEmbed = buildMatchEmbed(updatedMatch, guild);
+                const updatedEmbed = buildMatchEmbed(match, guild);
 
                 for (const message of reportUIMessages) {
                     await message.edit({
@@ -103,7 +85,7 @@ export async function sendReportUI(
                 await tempReply(i, 'Vote registered!');
 
                 await tryMatchConclusion(
-                    updatedMatch,
+                    match,
                     guild,
                     dbGuild,
                     reportUIMessages,

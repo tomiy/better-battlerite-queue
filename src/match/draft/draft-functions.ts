@@ -7,20 +7,22 @@ import {
     TextChannel,
 } from 'discord.js';
 import {
-    Match,
     MatchDraftStep,
     MatchPlayer,
     MatchTeam,
-    Prisma,
     Guild as dbGuild,
 } from '../../../.prisma';
-import { prisma } from '../../config';
 import { tempReply } from '../../interaction-utils';
+import {
+    FullMatchPlayer,
+    FullMatchTeam,
+    MatchRepository,
+} from '../../repository/match.repository';
 import { sendDraftUI } from './send-draft-ui';
 
 export async function canDraft(
     i: MessageComponentInteraction<'cached'>,
-    captain: Prisma.MatchPlayerGetPayload<{ include: { member: true } }>,
+    captain: FullMatchPlayer,
     currentDraftTeam: number,
     team: MatchTeam,
 ) {
@@ -38,28 +40,25 @@ export async function canDraft(
 }
 
 export async function sendNextStep(
-    match: Match,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
 ) {
-    await prisma.match.update({
-        where: { id: match.id },
-        data: {
-            currentDraftStep: match.currentDraftStep + 1,
-        },
+    await match.update({
+        currentDraftStep: match.data.currentDraftStep + 1,
     });
 
     for (const message of draftUIMessages) {
         await message.delete();
     }
 
-    await sendDraftUI(match.id, guild, dbGuild, teamChannels);
+    await sendDraftUI(match, guild, dbGuild, teamChannels);
 }
 
 export async function processDraftStep(
-    match: Match,
+    match: MatchRepository,
     team: MatchTeam,
     step: MatchDraftStep,
     i: StringSelectMenuInteraction,
@@ -68,33 +67,29 @@ export async function processDraftStep(
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
 ) {
-    let updated = null;
+    let updated = false;
     if (['BAN', 'GLOBAL_BAN'].includes(step.type)) {
-        updated = await prisma.matchTeam.update({
-            where: { id: team.id },
-            data: {
-                bans: {
-                    create: {
-                        global: step.type === 'GLOBAL_BAN',
-                        draftOrder: match.currentDraftStep,
-                        championId: parseInt(i.values[0]),
-                    },
+        await match.updateTeam(team.id, {
+            bans: {
+                create: {
+                    global: step.type === 'GLOBAL_BAN',
+                    draftOrder: match.data.currentDraftStep,
+                    championId: parseInt(i.values[0]),
                 },
             },
         });
+        updated = true;
     }
     if (step.type === 'PICK') {
-        updated = await prisma.matchTeam.update({
-            where: { id: team.id },
-            data: {
-                picks: {
-                    create: {
-                        draftOrder: match.currentDraftStep,
-                        championId: parseInt(i.values[0]),
-                    },
+        await match.updateTeam(team.id, {
+            picks: {
+                create: {
+                    draftOrder: match.data.currentDraftStep,
+                    championId: parseInt(i.values[0]),
                 },
             },
         });
+        updated = true;
     }
 
     if (updated) {
@@ -111,12 +106,10 @@ export async function processDraftStep(
 
 export async function tryClaimCaptain(
     i: ButtonInteraction<'cached'>,
-    captain: Prisma.MatchPlayerGetPayload<{ include: { member: true } }>,
+    captain: FullMatchPlayer,
     currentDraftTeam: number,
-    team: Prisma.MatchTeamGetPayload<{
-        include: { players: { include: { member: true } } };
-    }>,
-    matchId: number,
+    team: FullMatchTeam,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
@@ -151,36 +144,31 @@ export async function tryClaimCaptain(
     captainClaimTimeouts.set(
         team.id,
         setTimeout(async () => {
-            await claimCaptain(newCaptain, captain);
+            await claimCaptain(match, newCaptain, captain);
             clearCaptainClaimTimeouts(team.id);
 
             for (const message of draftUIMessages) {
                 await message.delete();
             }
 
-            await sendDraftUI(matchId, guild, dbGuild, teamChannels);
+            await sendDraftUI(match, guild, dbGuild, teamChannels);
         }, 60000),
     );
 
     await tc.send(
-        `A captain claim request has been made for this team.
-                        If the current captain doesn't perform any draft action within 1 minute,
-                        the player making the request will be appointed as new captain.`,
+        `A captain claim request has been made for this team. If the current captain doesn't perform any draft action within 1 minute, the player making the request will be appointed as new captain.`,
     );
 
     await tempReply(i, 'Claim registered!');
 }
 
-async function claimCaptain(newCaptain: MatchPlayer, oldCaptain: MatchPlayer) {
-    await prisma.matchPlayer.update({
-        where: { id: newCaptain.id },
-        data: { captain: true },
-    });
-
-    await prisma.matchPlayer.update({
-        where: { id: oldCaptain.id },
-        data: { captain: false },
-    });
+async function claimCaptain(
+    match: MatchRepository,
+    newCaptain: MatchPlayer,
+    oldCaptain: MatchPlayer,
+) {
+    await match.updatePlayer(newCaptain.id, { captain: true });
+    await match.updatePlayer(oldCaptain.id, { captain: false });
 }
 
 const captainClaimTimeouts: Map<number, NodeJS.Timeout> = new Map();

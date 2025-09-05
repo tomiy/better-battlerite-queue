@@ -5,8 +5,9 @@ import {
     StringSelectMenuBuilder,
     StringSelectMenuOptionBuilder,
 } from 'discord.js';
-import { ChampionData, MatchDraftStep, Prisma } from '../../.prisma';
+import { ChampionData, MatchDraftStep } from '../../.prisma';
 import { championToChampionName } from '../data/championMappings';
+import { FullMatchTeam, MatchRepository } from '../repository/match.repository';
 
 export function buildDraftButtons() {
     const meleeButton = new ButtonBuilder()
@@ -65,10 +66,8 @@ export function buildReportButtons(teams: number) {
 }
 
 export function buildDraftSelectionLists(
-    match: Prisma.MatchGetPayload<{
-        include: { teams: { include: { bans: true; picks: true } } };
-    }>,
-    team: Prisma.MatchTeamGetPayload<{ include: { bans: true; picks: true } }>,
+    match: MatchRepository,
+    team: FullMatchTeam,
     draftStep: MatchDraftStep,
     champions: ChampionData[],
 ) {

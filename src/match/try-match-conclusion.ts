@@ -2,58 +2,42 @@ import { Guild, Message, TextChannel } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
+import { MatchRepository } from '../repository/match.repository';
 import { buildMatchEmbed } from './build-match-embed';
-import { FullMatch, fullMatchInclude } from './match.type';
 import { computeRatingChanges } from './rating-functions';
 
 export async function tryMatchConclusion(
-    match: FullMatch,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
     reportUIMessages: Message<true>[] = [],
 ) {
-    const players = match.teams.flatMap((t) => t.players);
-    const winReports = Object.groupBy(players, (u) =>
-        u.teamWinReport !== null ? u.teamWinReport : -1,
-    );
-    const dropReportCount = players
-        .map((u) => u.dropReport)
-        .filter((r) => r === true).length;
+    let updated = false;
 
-    let updated: FullMatch | null = null;
-
-    if (dropReportCount > players.length / 2) {
+    if (match.dropReportCount > match.players.length / 2) {
         DebugUtils.debug(
-            `[Match Conclusion] Majority vote for dropping match ${match.id}`,
+            `[Match Conclusion] Majority vote for dropping match ${match.data.id}`,
         );
 
-        updated = await prisma.match.update({
-            where: { id: match.id },
-            data: { state: 'DROPPED' },
-            include: fullMatchInclude,
-        });
+        await match.update({ state: 'DROPPED' });
+
+        updated = true;
     }
 
-    for (const [teamNumber, reports] of Object.entries(winReports)) {
-        if (
-            parseInt(teamNumber) > -1 &&
-            reports &&
-            reports.length > players.length / 2
-        ) {
+    for (const [teamNumber, count] of match.winReportCounts) {
+        if (teamNumber > -1 && count > match.players.length / 2) {
             DebugUtils.debug(
-                `[Match Conclusion] Majority vote for team ${parseInt(teamNumber) + 1} in match ${match.id}`,
+                `[Match Conclusion] Majority vote for team ${teamNumber + 1} in match ${match.data.id}`,
             );
 
             const updatedPlayers = computeRatingChanges(
                 match.teams,
-                parseInt(teamNumber),
+                teamNumber,
             );
 
             for (const updatedPlayer of updatedPlayers) {
-                const player = await prisma.matchPlayer.update({
-                    where: { id: updatedPlayer.id },
-                    data: { ratingChange: updatedPlayer.ratingChange },
-                    include: { member: true },
+                const player = await match.updatePlayer(updatedPlayer.id, {
+                    ratingChange: updatedPlayer.ratingChange,
                 });
 
                 await prisma.member.update({
@@ -64,16 +48,14 @@ export async function tryMatchConclusion(
                 });
             }
 
-            updated = await prisma.match.update({
-                where: { id: match.id },
-                data: { state: 'FINISHED', teamWin: parseInt(teamNumber) },
-                include: fullMatchInclude,
-            });
+            match.update({ state: 'FINISHED', teamWin: teamNumber });
+
+            updated = true;
         }
     }
 
     if (updated) {
-        const updatedEmbed = buildMatchEmbed(updated, guild);
+        const updatedEmbed = buildMatchEmbed(match, guild);
 
         if (!reportUIMessages.length) {
             const matchHistoryChannel = guild.channels.resolve(
@@ -81,15 +63,27 @@ export async function tryMatchConclusion(
             );
 
             if (matchHistoryChannel instanceof TextChannel) {
-                const historyMessage = await matchHistoryChannel.send({
-                    embeds: [updatedEmbed],
-                    components: [],
-                });
+                if (!match.data.matchHistoryMessage) {
+                    const historyMessage = await matchHistoryChannel.send({
+                        embeds: [updatedEmbed],
+                        components: [],
+                    });
+                    await match.update({
+                        matchHistoryMessage: historyMessage.id,
+                    });
+                } else {
+                    const historyMessage =
+                        await matchHistoryChannel.messages.fetch(
+                            match.data.matchHistoryMessage,
+                        );
 
-                await prisma.match.update({
-                    where: { id: match.id },
-                    data: { matchHistoryMessage: historyMessage.id },
-                });
+                    if (historyMessage) {
+                        historyMessage.edit({
+                            embeds: [updatedEmbed],
+                            components: [],
+                        });
+                    }
+                }
             }
         }
 
@@ -108,7 +102,7 @@ export async function tryMatchConclusion(
         }
     } else {
         DebugUtils.debug(
-            `[Match Conclusion] No majority votes for match ${match.id}`,
+            `[Match Conclusion] No majority votes for match ${match.data.id}`,
         );
     }
 }

@@ -1,9 +1,8 @@
-import { Member, Prisma } from '../../.prisma';
+import { Member } from '../../.prisma';
+import { FullMatchTeam } from '../repository/match.repository';
 
 export function computeRatingChanges(
-    teams: Prisma.MatchTeamGetPayload<{
-        include: { players: { include: { member: true } } };
-    }>[],
+    teams: FullMatchTeam[],
     winningTeam: number,
 ) {
     const n = teams.length;

@@ -9,9 +9,9 @@ import {
 import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
 import { tempReply } from '../../interaction-utils';
+import { MatchRepository } from '../../repository/match.repository';
 import { buildMatchEmbed } from '../build-match-embed';
 import { buildDraftButtons, buildDraftSelectionLists } from '../build-match-ui';
-import { fullMatchInclude } from '../match.type';
 import { sendReportUI } from '../report/send-report-ui';
 import { tryMatchConclusion } from '../try-match-conclusion';
 import {
@@ -22,31 +22,29 @@ import {
 } from './draft-functions';
 
 export async function sendDraftUI(
-    matchId: number,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
     teamChannels: TextChannel[],
 ) {
-    const match = await prisma.match.findFirstOrThrow({
-        where: { id: matchId },
-        include: fullMatchInclude,
-    });
+    const totalSteps =
+        match.data.draftSequence.steps.length * match.teams.length;
 
-    const totalSteps = match.draftSequence.steps.length * match.teams.length;
-
-    if (match.currentDraftStep >= totalSteps) {
-        sendReportUI(match.id, guild, dbGuild, teamChannels);
+    if (match.data.currentDraftStep >= totalSteps) {
+        sendReportUI(match, guild, dbGuild, teamChannels);
         return;
     }
 
-    const roundNumber = Math.floor(match.currentDraftStep / match.teams.length);
-    const pickNumber = match.currentDraftStep % match.teams.length;
+    const roundNumber = Math.floor(
+        match.data.currentDraftStep / match.teams.length,
+    );
+    const pickNumber = match.data.currentDraftStep % match.teams.length;
     const currentDraftTeam =
         roundNumber % 2 === 1
             ? match.teams.length - pickNumber - 1
             : pickNumber;
 
-    const draftStep = match.draftSequence.steps.find(
+    const draftStep = match.data.draftSequence.steps.find(
         (s) => s.order === roundNumber,
     );
 
@@ -105,8 +103,7 @@ export async function sendDraftUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
-            const allPlayers = match.teams.flatMap((t) => t.players);
-            const matchingPlayer = allPlayers.find(
+            const matchingPlayer = match.players.find(
                 (u) => u.member.discordId === i.member.id,
             );
 
@@ -118,7 +115,7 @@ export async function sendDraftUI(
                         captain,
                         currentDraftTeam,
                         matchingTeam,
-                        match.id,
+                        match,
                         guild,
                         dbGuild,
                         teamChannels,
@@ -130,29 +127,19 @@ export async function sendDraftUI(
                     await i.deferReply({ flags: MessageFlags.Ephemeral });
 
                     if (matchingPlayer) {
-                        await prisma.matchPlayer.update({
-                            where: { id: matchingPlayer.id },
-                            data: { teamWinReport: null, dropReport: true },
+                        await match.updatePlayer(matchingPlayer.id, {
+                            teamWinReport: null,
+                            dropReport: true,
                         });
 
-                        const updatedMatch =
-                            await prisma.match.findFirstOrThrow({
-                                where: { id: match.id },
-                                include: fullMatchInclude,
-                            });
-
-                        const dropReportCount = updatedMatch.teams
-                            .flatMap((t) => t.players)
-                            .map((u) => u.dropReport)
-                            .filter((r) => r === true).length;
                         for (const teamChannel of teamChannels) {
                             await teamChannel.send(
-                                `${dropReportCount} player(s) have voted to drop the match.`,
+                                `${match.dropReportCount} player(s) have voted to drop the match.`,
                             );
                         }
 
                         await tempReply(i, 'Vote registered!');
-                        await tryMatchConclusion(updatedMatch, guild, dbGuild);
+                        await tryMatchConclusion(match, guild, dbGuild);
 
                         return;
                     }

@@ -6,25 +6,20 @@ import {
     TextChannel,
 } from 'discord.js';
 import { MatchPlayer, Member, Guild as dbGuild } from '../../../.prisma';
-import { categoryChannelName, prisma } from '../../config';
+import { categoryChannelName } from '../../config';
 import { DebugUtils } from '../../debug-utils';
+import { MatchRepository } from '../../repository/match.repository';
 import { sendDraftUI } from './send-draft-ui';
 import { sendPlayerUI } from './send-player-ui';
 
 export async function initDraft(
-    matchId: number,
+    match: MatchRepository,
     guild: Guild,
     dbGuild: dbGuild,
 ) {
-    DebugUtils.debug(`[Init Draft] initializing draft for match ${matchId}`);
-
-    const match = await prisma.match.findFirstOrThrow({
-        where: { id: matchId },
-        include: {
-            draftSequence: true,
-            teams: { include: { players: { include: { member: true } } } },
-        },
-    });
+    DebugUtils.debug(
+        `[Init Draft] initializing draft for match ${match.data.id}`,
+    );
 
     const categoryChannel = guild.channels.cache.find(
         (c) => c.name === categoryChannelName,
@@ -58,7 +53,7 @@ export async function initDraft(
     const teamChannels: TextChannel[] = [];
     for (const team of match.teams) {
         const teamChannel = await guild.channels.create({
-            name: `match-${matchId}-team-${team.order + 1}`,
+            name: `match-${match.data.id}-team-${team.order + 1}`,
             parent: categoryChannel,
             type: ChannelType.GuildText,
             permissionOverwrites: mapPlayersToPermissionOverwrites(
@@ -68,22 +63,12 @@ export async function initDraft(
 
         teamChannels.push(teamChannel);
 
-        await prisma.matchTeam.update({
-            where: { id: team.id },
-            data: {
-                teamChannel: teamChannel.id,
-            },
-        });
+        await match.updateTeam(team.id, { teamChannel: teamChannel.id });
 
         await sendPlayerUI(team, teamChannel, guild);
     }
 
-    await prisma.match.update({
-        where: { id: match.id },
-        data: {
-            state: 'DRAFT',
-        },
-    });
+    await match.update({ state: 'DRAFT' });
 
-    await sendDraftUI(match.id, guild, dbGuild, teamChannels);
+    await sendDraftUI(match, guild, dbGuild, teamChannels);
 }

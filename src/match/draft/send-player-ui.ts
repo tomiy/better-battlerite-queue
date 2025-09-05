@@ -1,10 +1,8 @@
 import { EmbedBuilder, Guild, TextChannel } from 'discord.js';
-import { Prisma } from '../../.prisma';
+import { FullMatchTeam } from '../../repository/match.repository';
 
 export async function sendPlayerUI(
-    team: Prisma.MatchTeamGetPayload<{
-        include: { players: { include: { member: true } } };
-    }>,
+    team: FullMatchTeam,
     teamChannel: TextChannel,
     guild: Guild,
 ) {

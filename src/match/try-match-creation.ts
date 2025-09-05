@@ -2,6 +2,7 @@ import { Guild } from 'discord.js';
 import { Guild as dbGuild, Prisma, Region } from '../../.prisma';
 import { defaultDraftSequenceName, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
+import { MatchRepository } from '../repository/match.repository';
 import { initDraft } from './draft/init-draft';
 import { getTeamAverageElo } from './rating-functions';
 
@@ -121,22 +122,11 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         include: { steps: { orderBy: { order: 'asc' } } },
     });
 
-    const match = await prisma.match.create({
-        data: {
-            mapId: map.id,
-            teams: {
-                createMany: {
-                    data: bestConfig.teams.map((_, i) => ({ order: i })),
-                },
-            },
-            draftSequenceId: draftSequence.id,
-        },
-        include: { teams: true },
-    });
-
-    if (!match) {
-        throw new Error('[Match Creation] Could not create match!');
-    }
+    const match = await MatchRepository.create(
+        map,
+        bestConfig.teams.map((_, i) => ({ order: i })),
+        draftSequence,
+    );
 
     const teamsPlayerData: Prisma.MatchPlayerCreateManyInput[] = [];
     bestConfig.teams.forEach((team, teamIndex) => {
@@ -151,14 +141,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         );
     });
 
-    const playerData = await prisma.matchPlayer.createManyAndReturn({
-        data: teamsPlayerData,
-        include: { member: true },
-    });
-
-    if (!playerData) {
-        throw new Error('[Match Creation] Could not create players!');
-    }
+    const playerData = await match.createPlayers(teamsPlayerData);
 
     for (const player of playerData) {
         const discordMember = guild.members.cache.get(player.member.discordId);
@@ -183,7 +166,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         );
     }
 
-    await initDraft(match.id, guild, dbGuild);
+    await initDraft(match, guild, dbGuild);
 }
 
 function permuteMatchMembers(a: QueueWithMember[]) {

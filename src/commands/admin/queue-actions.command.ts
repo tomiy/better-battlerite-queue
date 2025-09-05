@@ -83,7 +83,7 @@ async function execute(interaction: CommandInteraction) {
     }
 }
 
-export const queueReset: Command = {
+export const queueActions: Command = {
     data: data,
     execute: execute,
     guards: [botSetup, botCommandsChannel, botModGuard],
