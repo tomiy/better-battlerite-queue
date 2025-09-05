@@ -8,10 +8,12 @@ import {
 } from 'discord.js';
 import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
+import { tempReply } from '../../interaction-utils';
 import { buildMatchEmbed } from '../build-match-embed';
 import { buildDraftButtons, buildDraftSelectionLists } from '../build-match-ui';
 import { fullMatchInclude } from '../match.type';
 import { sendReportUI } from '../report/send-report-ui';
+import { tryMatchConclusion } from '../try-match-conclusion';
 import {
     canDraft,
     clearCaptainClaimTimeouts,
@@ -103,22 +105,60 @@ export async function sendDraftUI(
         });
 
         buttonCollector?.on('collect', async (i) => {
-            if (i.customId === 'claimCaptainButton') {
-                await i.deferReply({ flags: MessageFlags.Ephemeral });
+            const allPlayers = match.teams.flatMap((t) => t.players);
+            const matchingPlayer = allPlayers.find(
+                (u) => u.member.discordId === i.member.id,
+            );
 
-                tryClaimCaptain(
-                    i,
-                    captain,
-                    currentDraftTeam,
-                    matchingTeam,
-                    match.id,
-                    guild,
-                    dbGuild,
-                    teamChannels,
-                    draftUIMessages,
-                    tc,
-                );
-                return;
+            switch (i.customId) {
+                case 'claimCaptainButton':
+                    await i.deferReply({ flags: MessageFlags.Ephemeral });
+                    await tryClaimCaptain(
+                        i,
+                        captain,
+                        currentDraftTeam,
+                        matchingTeam,
+                        match.id,
+                        guild,
+                        dbGuild,
+                        teamChannels,
+                        draftUIMessages,
+                        tc,
+                    );
+                    return;
+                case 'draftButtonDrop':
+                    await i.deferReply({ flags: MessageFlags.Ephemeral });
+
+                    if (matchingPlayer) {
+                        await prisma.matchPlayer.update({
+                            where: { id: matchingPlayer.id },
+                            data: { teamWinReport: null, dropReport: true },
+                        });
+
+                        const updatedMatch =
+                            await prisma.match.findFirstOrThrow({
+                                where: { id: match.id },
+                                include: fullMatchInclude,
+                            });
+
+                        const dropReportCount = updatedMatch.teams
+                            .flatMap((t) => t.players)
+                            .map((u) => u.dropReport)
+                            .filter((r) => r === true).length;
+                        for (const teamChannel of teamChannels) {
+                            await teamChannel.send(
+                                `${dropReportCount} player(s) have voted to drop the match.`,
+                            );
+                        }
+
+                        await tempReply(i, 'Vote registered!');
+                        await tryMatchConclusion(updatedMatch, guild, dbGuild);
+
+                        return;
+                    }
+
+                    await tempReply(i, 'You are not in this match!');
+                    return;
             }
 
             if (!(await canDraft(i, captain, currentDraftTeam, matchingTeam))) {

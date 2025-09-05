@@ -1,4 +1,4 @@
-import { Guild, Message } from 'discord.js';
+import { Guild, Message, TextChannel } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
@@ -10,7 +10,7 @@ export async function tryMatchConclusion(
     match: FullMatch,
     guild: Guild,
     dbGuild: dbGuild,
-    reportUIMessages: Message<true>[],
+    reportUIMessages: Message<true>[] = [],
 ) {
     const players = match.teams.flatMap((t) => t.players);
     const winReports = Object.groupBy(players, (u) =>
@@ -74,6 +74,24 @@ export async function tryMatchConclusion(
 
     if (updated) {
         const updatedEmbed = buildMatchEmbed(updated, guild);
+
+        if (!reportUIMessages.length) {
+            const matchHistoryChannel = guild.channels.resolve(
+                dbGuild.matchHistoryChannel || '',
+            );
+
+            if (matchHistoryChannel instanceof TextChannel) {
+                const historyMessage = await matchHistoryChannel.send({
+                    embeds: [updatedEmbed],
+                    components: [],
+                });
+
+                await prisma.match.update({
+                    where: { id: match.id },
+                    data: { matchHistoryMessage: historyMessage.id },
+                });
+            }
+        }
 
         for (const message of reportUIMessages) {
             await message.edit({ embeds: [updatedEmbed], components: [] });

@@ -29,11 +29,17 @@ export function buildDraftButtons() {
         .setLabel('Claim captain')
         .setStyle(ButtonStyle.Danger);
 
+    const dropButton = new ButtonBuilder()
+        .setCustomId('draftButtonDrop')
+        .setLabel('Drop')
+        .setStyle(ButtonStyle.Danger);
+
     return new ActionRowBuilder<ButtonBuilder>()
         .addComponents(meleeButton)
         .addComponents(rangedButton)
         .addComponents(supportButton)
-        .addComponents(claimCaptainButton);
+        .addComponents(claimCaptainButton)
+        .addComponents(dropButton);
 }
 
 export function buildReportButtons(teams: number) {

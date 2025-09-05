@@ -116,12 +116,18 @@ After the draft, players may report the match's outcome by voting for the option
 
 TODO:
 
-- Drop during draft
-- Seasons
+- Rewrite with classes
+- Create utility functions/classes to update & return full orm objects
+- Paginated champion list instead of melee/ranged/support
 - Champ & Map modals to edit restrictions & weights
+- Remove default champ data & db enums
+- Remove default map data & db enums
+- Remove map variants
+- Seasons
 - User profiles (w/ graphs: **low prio**)
 - Leaderboards
 - Manage draft sequences
+- Add GLOBAL_PICK option (for games with no global duplicate champs)
 
 MAYBE:
 
