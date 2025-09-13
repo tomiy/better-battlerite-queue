@@ -1,3 +1,4 @@
+import { Client } from 'discord.js';
 import dotenv from 'dotenv';
 import { DraftStep, PrismaClient } from '../.prisma';
 
@@ -30,4 +31,9 @@ export const defaultDraftSequence = [
 ];
 export const defaultDraftSequenceName = 'DEFAULT';
 
+export const defaultDataFolder = 'battlerite';
+
 export const prisma = new PrismaClient();
+export const client = new Client({
+    intents: ['Guilds', 'GuildMessages', 'DirectMessages', 'GuildMembers'],
+});

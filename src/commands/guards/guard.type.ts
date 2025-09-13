@@ -1,5 +1,5 @@
 import { CommandInteraction } from 'discord.js';
-import { Guild as dbGuild } from '../../.prisma';
+import { Guild as dbGuild } from '../../../.prisma';
 
 export type GuardFunction = (
     interaction: CommandInteraction,

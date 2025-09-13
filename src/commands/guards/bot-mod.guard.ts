@@ -1,7 +1,7 @@
 import { CommandInteraction, GuildMember, roleMention } from 'discord.js';
-import { Guild as dbGuild } from '../../.prisma';
-import { tempReply } from '../interaction-utils';
-import { GuardFunction } from './guard';
+import { Guild as dbGuild } from '../../../.prisma';
+import { tempReply } from '../../interaction-utils';
+import { GuardFunction } from './guard.type';
 
 export const botModGuard: GuardFunction = async (
     interaction: CommandInteraction,

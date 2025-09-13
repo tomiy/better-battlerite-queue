@@ -1,25 +1,26 @@
 import {
     CategoryChannel,
     ChannelType,
-    Guild,
     PermissionsBitField,
     TextChannel,
 } from 'discord.js';
-import { MatchPlayer, Member, Guild as dbGuild } from '../../../.prisma';
-import { categoryChannelName } from '../../config';
+import { MatchPlayer, Member } from '../../../.prisma';
+import { categoryChannelName, client } from '../../config';
 import { DebugUtils } from '../../debug-utils';
 import { MatchRepository } from '../../repository/match.repository';
 import { sendDraftUI } from './send-draft-ui';
 import { sendPlayerUI } from './send-player-ui';
 
-export async function initDraft(
-    match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
-) {
+export async function initDraft(match: MatchRepository) {
     DebugUtils.debug(
         `[Init Draft] initializing draft for match ${match.data.id}`,
     );
+
+    const guild = client.guilds.cache.get(match.data.guild.discordId);
+
+    if (!guild) {
+        throw new Error(`[Init Draft] No guild for match ${match.data.id}`);
+    }
 
     const categoryChannel = guild.channels.cache.find(
         (c) => c.name === categoryChannelName,
@@ -70,5 +71,5 @@ export async function initDraft(
 
     await match.update({ state: 'DRAFT' });
 
-    await sendDraftUI(match, guild, dbGuild, teamChannels);
+    await sendDraftUI(match, teamChannels);
 }

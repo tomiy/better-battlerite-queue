@@ -1,11 +1,5 @@
-import {
-    ComponentType,
-    Guild,
-    Message,
-    MessageFlags,
-    TextChannel,
-} from 'discord.js';
-import { Guild as dbGuild } from '../../../.prisma';
+import { ComponentType, Message, MessageFlags, TextChannel } from 'discord.js';
+import { client } from '../../config';
 import { tempReply } from '../../interaction-utils';
 import { MatchRepository } from '../../repository/match.repository';
 import { buildMatchEmbed } from '../build-match-embed';
@@ -14,13 +8,17 @@ import { tryMatchConclusion } from '../try-match-conclusion';
 
 export async function sendReportUI(
     match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
     teamChannels: TextChannel[],
 ) {
+    const guild = client.guilds.cache.get(match.data.guild.discordId);
+
+    if (!guild) {
+        throw new Error(`[Report UI] No guild for match ${match.data.id}`);
+    }
+
     await match.update({ state: 'ONGOING' });
 
-    const mainEmbed = buildMatchEmbed(match, guild);
+    const mainEmbed = buildMatchEmbed(match);
     const reportButtons = buildReportButtons(match.teams.length);
 
     const reportUIMessages: Message<true>[] = [];
@@ -32,7 +30,7 @@ export async function sendReportUI(
     }
 
     const matchHistoryChannel = guild.channels.resolve(
-        dbGuild.matchHistoryChannel || '',
+        match.data.guild.matchHistoryChannel || '',
     );
 
     if (matchHistoryChannel instanceof TextChannel) {
@@ -42,7 +40,7 @@ export async function sendReportUI(
         });
         reportUIMessages.push(historyMessage);
 
-        await match.update({ matchHistoryMessage: historyMessage.id });
+        await match.update({ historyMessage: historyMessage.id });
     }
 
     for (const reportMessage of reportUIMessages) {
@@ -73,7 +71,7 @@ export async function sendReportUI(
                     });
                 }
 
-                const updatedEmbed = buildMatchEmbed(match, guild);
+                const updatedEmbed = buildMatchEmbed(match);
 
                 for (const message of reportUIMessages) {
                     await message.edit({
@@ -84,12 +82,7 @@ export async function sendReportUI(
 
                 await tempReply(i, 'Vote registered!');
 
-                await tryMatchConclusion(
-                    match,
-                    guild,
-                    dbGuild,
-                    reportUIMessages,
-                );
+                await tryMatchConclusion(match, reportUIMessages);
 
                 return;
             }

@@ -123,9 +123,10 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
     });
 
     const match = await MatchRepository.create(
-        map,
+        dbGuild.id,
+        map.id,
         bestConfig.teams.map((_, i) => ({ order: i })),
-        draftSequence,
+        draftSequence.id,
     );
 
     const teamsPlayerData: Prisma.MatchPlayerCreateManyInput[] = [];
@@ -166,7 +167,7 @@ export async function tryMatchCreation(dbGuild: dbGuild, guild: Guild) {
         );
     }
 
-    await initDraft(match, guild, dbGuild);
+    await initDraft(match);
 }
 
 function permuteMatchMembers(a: QueueWithMember[]) {

@@ -1,6 +1,5 @@
-import { Guild, Message, TextChannel } from 'discord.js';
-import { Guild as dbGuild } from '../../.prisma';
-import { prisma } from '../config';
+import { Message, TextChannel } from 'discord.js';
+import { client, prisma } from '../config';
 import { DebugUtils } from '../debug-utils';
 import { MatchRepository } from '../repository/match.repository';
 import { buildMatchEmbed } from './build-match-embed';
@@ -8,10 +7,16 @@ import { computeRatingChanges } from './rating-functions';
 
 export async function tryMatchConclusion(
     match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
     reportUIMessages: Message<true>[] = [],
 ) {
+    const guild = client.guilds.cache.get(match.data.guild.discordId);
+
+    if (!guild) {
+        throw new Error(
+            `[Match Conclusion] No guild for match ${match.data.id}`,
+        );
+    }
+
     let updated = false;
 
     if (match.dropReportCount > match.players.length / 2) {
@@ -55,26 +60,26 @@ export async function tryMatchConclusion(
     }
 
     if (updated) {
-        const updatedEmbed = buildMatchEmbed(match, guild);
+        const updatedEmbed = buildMatchEmbed(match);
 
         if (!reportUIMessages.length) {
             const matchHistoryChannel = guild.channels.resolve(
-                dbGuild.matchHistoryChannel || '',
+                match.data.guild.matchHistoryChannel || '',
             );
 
             if (matchHistoryChannel instanceof TextChannel) {
-                if (!match.data.matchHistoryMessage) {
+                if (!match.data.historyMessage) {
                     const historyMessage = await matchHistoryChannel.send({
                         embeds: [updatedEmbed],
                         components: [],
                     });
                     await match.update({
-                        matchHistoryMessage: historyMessage.id,
+                        historyMessage: historyMessage.id,
                     });
                 } else {
                     const historyMessage =
                         await matchHistoryChannel.messages.fetch(
-                            match.data.matchHistoryMessage,
+                            match.data.historyMessage,
                         );
 
                     if (historyMessage) {
@@ -95,11 +100,13 @@ export async function tryMatchConclusion(
             for (const player of team.players) {
                 await guild.members.cache
                     .get(player.member.discordId)
-                    ?.roles.remove(dbGuild.matchRole || '');
+                    ?.roles.remove(match.data.guild.matchRole || '');
             }
 
             await guild.channels.delete(team.teamChannel || '');
         }
+
+        MatchRepository.discard(match.data.id);
     } else {
         DebugUtils.debug(
             `[Match Conclusion] No majority votes for match ${match.data.id}`,

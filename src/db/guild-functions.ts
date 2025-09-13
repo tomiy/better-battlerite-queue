@@ -8,12 +8,12 @@ export async function createGuild(
 ) {
     try {
         const createdGuild = await prisma.guild.create({
-            data: { guildDiscordId: guildId },
+            data: { discordId: guildId },
         });
 
         if (createdGuild) {
             DebugUtils.debug(
-                `[DB Guild] Created guild with guild id ${createdGuild.guildDiscordId}`,
+                `[DB Guild] Created guild with guild id ${createdGuild.discordId}`,
             );
             if (callback) {
                 callback(createdGuild);
@@ -30,12 +30,12 @@ export async function deleteGuild(
 ) {
     try {
         const deletedGuild = await prisma.guild.delete({
-            where: { guildDiscordId: guildId },
+            where: { discordId: guildId },
         });
 
         if (deletedGuild) {
             DebugUtils.debug(
-                `[DB Guild] Deleted guild with guild id ${deletedGuild.guildDiscordId}`,
+                `[DB Guild] Deleted guild with guild id ${deletedGuild.discordId}`,
             );
 
             if (callback) {

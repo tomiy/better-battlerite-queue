@@ -1,7 +1,7 @@
-import { Client, Events, Guild } from 'discord.js';
+import { Events, Guild } from 'discord.js';
 import { commands } from './commands';
 import { executeCommand } from './commands/command';
-import { config, prisma } from './config';
+import { client, config, prisma } from './config';
 import { createGuild, deleteGuild } from './db/guild-functions';
 import { DebugLevel, DebugUtils } from './debug-utils';
 import { initGuild } from './init';
@@ -11,18 +11,14 @@ DebugUtils.setDebugLevel(
     (config.DEBUG_LEVEL || DebugLevel.WARNING) as DebugLevel,
 );
 
-const client = new Client({
-    intents: ['Guilds', 'GuildMessages', 'DirectMessages', 'GuildMembers'],
-});
-
 client.once(Events.ClientReady, async () => {
     DebugUtils.debug('[Startup] Syncing guilds with db...');
     const dbGuilds = await prisma.guild.findMany();
 
-    const syncedGuilds: Guild[] = await syncGuilds(client, dbGuilds);
+    const syncedGuilds: Guild[] = await syncGuilds(dbGuilds);
 
     for (const syncedGuild of syncedGuilds) {
-        await initGuild(client, syncedGuild);
+        await initGuild(syncedGuild);
     }
 
     DebugUtils.debug('[Startup] Successfully synced guilds with db');
@@ -35,11 +31,11 @@ client.once(Events.ClientReady, async () => {
 
 client.on(Events.GuildCreate, async (guild) => {
     await createGuild(guild.id, async (createdGuild) => {
-        const clientGuild = client.guilds.cache.get(
-            createdGuild.guildDiscordId,
-        );
+        const clientGuild = client.guilds.cache.get(createdGuild.discordId);
 
-        await initGuild(client, clientGuild);
+        if (clientGuild) {
+            await initGuild(clientGuild);
+        }
     });
 });
 

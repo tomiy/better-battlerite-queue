@@ -6,13 +6,13 @@ import {
 } from 'discord.js';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
-import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
-import { botModGuard } from '../../guards/bot-mod.guard';
-import { botSetup } from '../../guards/bot-setup.guard';
 import { tempReply } from '../../interaction-utils';
 import { buildMatchEmbed } from '../../match/build-match-embed';
 import { MatchRepository } from '../../repository/match.repository';
 import { Command } from '../command';
+import { botCommandsChannel } from '../guards/bot-command-channel.guard';
+import { botModGuard } from '../guards/bot-mod.guard';
+import { botSetup } from '../guards/bot-setup.guard';
 
 const data = new SlashCommandBuilder()
     .setName('match')
@@ -44,7 +44,7 @@ async function execute(interaction: CommandInteraction) {
     }
 
     const dbGuild = await prisma.guild.findFirstOrThrow({
-        where: { guildDiscordId: guild.id },
+        where: { discordId: guild.id },
     });
 
     if (interaction.options.getSubcommand() === 'drop') {
@@ -64,24 +64,24 @@ async function execute(interaction: CommandInteraction) {
 
         await match.update({ state: 'DROPPED' });
 
-        const updatedEmbed = buildMatchEmbed(match, guild);
+        const updatedEmbed = buildMatchEmbed(match);
 
         const matchHistoryChannel = guild.channels.resolve(
             dbGuild.matchHistoryChannel || '',
         );
 
         if (matchHistoryChannel instanceof TextChannel) {
-            if (!match.data.matchHistoryMessage) {
+            if (!match.data.historyMessage) {
                 const historyMessage = await matchHistoryChannel.send({
                     embeds: [updatedEmbed],
                     components: [],
                 });
                 await match.update({
-                    matchHistoryMessage: historyMessage.id,
+                    historyMessage: historyMessage.id,
                 });
             } else {
                 const historyMessage = await matchHistoryChannel.messages.fetch(
-                    match.data.matchHistoryMessage,
+                    match.data.historyMessage,
                 );
 
                 if (historyMessage) {

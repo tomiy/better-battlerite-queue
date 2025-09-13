@@ -1,0 +1,102 @@
+[
+    {
+        "name": "Bakko"
+    },
+    {
+        "name": "Croak"
+    },
+    {
+        "name": "Freya",
+        "restrictions": "Thunderbolt (red m2)"
+    },
+    {
+        "name": "Jamila",
+        "restrictions": "Deadly Star (red m2), Deep Wounds (purple m2)"
+    },
+    {
+        "name": "Raigon",
+        "restrictions": "Aerial Strike (white e)"
+    },
+    {
+        "name": "Rook",
+        "restrictions": "Crumble (red e)"
+    },
+    {
+        "name": "Ruh Kaan"
+    },
+    {
+        "name": "Shifu"
+    },
+    {
+        "name": "Thorn"
+    },
+    {
+        "name": "Alysia",
+        "restrictions": "Cryogenic Lance (purple m2), Winty Blast (red q) + Arctic Cloak (light blue e)"
+    },
+    {
+        "name": "Ashka",
+        "restrictions": "Conflagration (red r)"
+    },
+    {
+        "name": "Destiny",
+        "restrictions": "Plasma Booster (yellow e)"
+    },
+    {
+        "name": "Ezmo"
+    },
+    {
+        "name": "Iva",
+        "restrictions": "Conductor (pink e) + EMP (blue e), U-Turn (blue space)"
+    },
+    {
+        "name": "Jade",
+        "restrictions": "Evasive Measures (blue space)"
+    },
+    {
+        "name": "Jumong"
+    },
+    {
+        "name": "Shen Rao",
+        "restrictions": "Overrule (blue q), Regal Aura (green e), Eyewall (purple m2) + Puppeteer (blue m2)"
+    },
+    {
+        "name": "Taya",
+        "restrictions": "Gale (green space)"
+    },
+    {
+        "name": "Varesh",
+        "restrictions": "Zeal (purple space) + Law Bender (blue e)"
+    },
+    {
+        "name": "Blossom",
+        "restrictions": "Bountiful Tree (light blue q) + Healthful Bark (green q)"
+    },
+    {
+        "name": "Lucie"
+    },
+    {
+        "name": "Oldur"
+    },
+    {
+        "name": "Pearl",
+        "restrictions": "Ocean Sage (blue e)"
+    },
+    {
+        "name": "Pestilus"
+    },
+    {
+        "name": "Poloma",
+        "restrictions": "Shimmering Bond (blue m1), Silver Fang (red e)"
+    },
+    {
+        "name": "Sirius"
+    },
+    {
+        "name": "Ulric",
+        "restrictions": "Vindicator (yellow r)"
+    },
+    {
+        "name": "Zander"
+    }
+]

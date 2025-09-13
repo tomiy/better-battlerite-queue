@@ -6,23 +6,17 @@ import {
     StringSelectMenuOptionBuilder,
 } from 'discord.js';
 import { ChampionData, MatchDraftStep } from '../../.prisma';
-import { championToChampionName } from '../data/championMappings';
 import { FullMatchTeam, MatchRepository } from '../repository/match.repository';
 
 export function buildDraftButtons() {
-    const meleeButton = new ButtonBuilder()
-        .setCustomId('meleeButton')
-        .setLabel('Melee')
+    const previousPageButton = new ButtonBuilder()
+        .setCustomId('previousPageButton')
+        .setLabel('Previous page')
         .setStyle(ButtonStyle.Primary);
 
-    const rangedButton = new ButtonBuilder()
-        .setCustomId('rangedButton')
-        .setLabel('Ranged')
-        .setStyle(ButtonStyle.Primary);
-
-    const supportButton = new ButtonBuilder()
-        .setCustomId('supportButton')
-        .setLabel('Support')
+    const nextPageButton = new ButtonBuilder()
+        .setCustomId('nextPageButton')
+        .setLabel('Next page')
         .setStyle(ButtonStyle.Primary);
 
     const claimCaptainButton = new ButtonBuilder()
@@ -35,12 +29,14 @@ export function buildDraftButtons() {
         .setLabel('Drop')
         .setStyle(ButtonStyle.Danger);
 
-    return new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(meleeButton)
-        .addComponents(rangedButton)
-        .addComponents(supportButton)
-        .addComponents(claimCaptainButton)
-        .addComponents(dropButton);
+    return [
+        new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(previousPageButton)
+            .addComponents(nextPageButton),
+        new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(claimCaptainButton)
+            .addComponents(dropButton),
+    ];
 }
 
 export function buildReportButtons(teams: number) {
@@ -70,6 +66,7 @@ export function buildDraftSelectionLists(
     team: FullMatchTeam,
     draftStep: MatchDraftStep,
     champions: ChampionData[],
+    currentPage: number = 0,
 ) {
     const enemyTeams = match.teams.filter((t) => t.id !== team.id);
     const enemyBans = enemyTeams.flatMap((et) => et.bans);
@@ -86,53 +83,33 @@ export function buildDraftSelectionLists(
                 !team.bans.map((tb) => tb.championId).includes(id) &&
                 !enemyPicks.map((ep) => ep.championId).includes(id) &&
                 !globalBans.map((gb) => gb.championId).includes(id)) ||
-            (draftStep.type === 'PICK' &&
+            (draftStep.type === 'PICK' && // TODO: global pick
                 !team.picks.map((tp) => tp.championId).includes(id) &&
                 !enemyBans.map((eb) => eb.championId).includes(id) &&
                 !globalBans.map((gb) => gb.championId).includes(id))
         );
     };
 
-    const meleeChampions = champions
-        .filter((c) => c.type === 'MELEE' && canPick(c.id))
-        .map(championToSelectOption);
-    const rangedChampions = champions
-        .filter((c) => c.type === 'RANGED' && canPick(c.id))
-        .map(championToSelectOption);
-    const supportChampions = champions
-        .filter((c) => c.type === 'SUPPORT' && canPick(c.id))
+    const pickableChampions = champions
+        .filter((c) => canPick(c.id))
+        .splice(currentPage * 25, 25)
         .map(championToSelectOption);
 
     const meleeList = new StringSelectMenuBuilder()
-        .setCustomId('meleeList')
-        .setPlaceholder('Choose a melee champion')
-        .addOptions(meleeChampions);
-    const rangedList = new StringSelectMenuBuilder()
-        .setCustomId('rangedList')
-        .setPlaceholder('Choose a ranged champion')
-        .addOptions(rangedChampions);
-    const supportList = new StringSelectMenuBuilder()
-        .setCustomId('supportList')
-        .setPlaceholder('Choose a support champion')
-        .addOptions(supportChampions);
+        .setCustomId('championList')
+        .setPlaceholder(
+            `Choose a champion to ${draftStep.type.replace('_', ' ')}`,
+        ) // FIXME: remove ugly hack to display draft step (maybe not worth but idk)
+        .addOptions(pickableChampions);
 
-    return {
-        melee: new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-            meleeList,
-        ),
-        ranged: new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-            rangedList,
-        ),
-        support: new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-            supportList,
-        ),
-    };
+    return new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        meleeList,
+    );
 }
 
 function championToSelectOption(c: ChampionData) {
-    const championName = championToChampionName.get(c.champion) || 'Unknown';
     return new StringSelectMenuOptionBuilder()
-        .setLabel(championName)
-        .setDescription(championName)
+        .setLabel(c.name)
+        .setDescription(c.name)
         .setValue(c.id.toString());
 }

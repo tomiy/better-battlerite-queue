@@ -12,12 +12,12 @@ import {
 import { Guild as dbGuild, Region } from '../../../.prisma';
 import { prisma } from '../../config';
 import { joinQueue, leaveQueue, toggleRegion } from '../../db/queue-functions';
-import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
-import { botModGuard } from '../../guards/bot-mod.guard';
-import { botSetup } from '../../guards/bot-setup.guard';
 import { tempReply } from '../../interaction-utils';
 import { tryMatchCreation } from '../../match/try-match-creation';
 import { Command } from '../command';
+import { botCommandsChannel } from '../guards/bot-command-channel.guard';
+import { botModGuard } from '../guards/bot-mod.guard';
+import { botSetup } from '../guards/bot-setup.guard';
 
 const data = new SlashCommandBuilder()
     .setName('launch')

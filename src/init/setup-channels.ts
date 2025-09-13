@@ -138,7 +138,7 @@ export async function setupChannels(guild: Guild) {
         }
 
         await prisma.guild.update({
-            where: { guildDiscordId: guild.id },
+            where: { discordId: guild.id },
             data: {
                 botCommandsChannel: botCommandsChannel.id,
                 queueChannel: queueChannel.id,

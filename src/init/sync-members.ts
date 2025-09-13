@@ -11,7 +11,7 @@ export async function syncMembers(guild: Guild) {
         );
 
         const dbGuild = await prisma.guild.findFirstOrThrow({
-            where: { guildDiscordId: guild.id },
+            where: { discordId: guild.id },
         });
 
         const queueRole = dbGuild.queueRole;
@@ -40,7 +40,7 @@ export async function syncMembers(guild: Guild) {
 
         const syncedMembers: GuildMember[] = [];
         const dbMembers = await prisma.member.findMany({
-            where: { guild: { guildDiscordId: guild.id } },
+            where: { guild: { discordId: guild.id } },
         });
 
         for (const dbMember of dbMembers) {
@@ -118,17 +118,17 @@ export async function syncMembers(guild: Guild) {
 
         for (const finishedMatch of finishedMatches) {
             if (matchHistoryChannel instanceof TextChannel) {
-                if (finishedMatch.matchHistoryMessage) {
+                if (finishedMatch.historyMessage) {
                     const historyMessage =
                         await matchHistoryChannel.messages.fetch(
-                            finishedMatch.matchHistoryMessage,
+                            finishedMatch.historyMessage,
                         );
                     if (historyMessage.editable) {
                         const fullMatch = await MatchRepository.get(
                             finishedMatch.id,
                         );
 
-                        const matchEmbed = buildMatchEmbed(fullMatch, guild);
+                        const matchEmbed = buildMatchEmbed(fullMatch);
 
                         await historyMessage.edit({
                             embeds: [matchEmbed],

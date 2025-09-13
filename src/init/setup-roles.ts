@@ -88,7 +88,7 @@ export async function setupRoles(guild: Guild) {
         }
 
         await prisma.guild.update({
-            where: { guildDiscordId: guild.id },
+            where: { discordId: guild.id },
             data: {
                 registeredRole: registeredRole.id,
                 queueRole: queueRole.id,

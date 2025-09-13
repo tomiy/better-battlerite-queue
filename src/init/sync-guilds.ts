@@ -1,15 +1,16 @@
-import { Client, Guild } from 'discord.js';
+import { Guild } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
+import { client } from '../config';
 import { createGuild, deleteGuild } from '../db/guild-functions';
 
-export async function syncGuilds(client: Client, dbGuilds: dbGuild[]) {
+export async function syncGuilds(dbGuilds: dbGuild[]) {
     const syncedGuilds: Guild[] = [];
 
     for (const dbGuild of dbGuilds) {
-        const clientGuild = client.guilds.cache.get(dbGuild.guildDiscordId);
+        const clientGuild = client.guilds.cache.get(dbGuild.discordId);
 
         if (!clientGuild) {
-            await deleteGuild(dbGuild.guildDiscordId);
+            await deleteGuild(dbGuild.discordId);
             continue;
         }
 
@@ -21,7 +22,7 @@ export async function syncGuilds(client: Client, dbGuilds: dbGuild[]) {
             (syncedGuild) => syncedGuild.id === clientGuildId,
         );
         const dbGuild = dbGuilds.find(
-            (dbGuild) => dbGuild.guildDiscordId === clientGuildId,
+            (dbGuild) => dbGuild.discordId === clientGuildId,
         );
 
         if (!syncedGuild && !dbGuild) {

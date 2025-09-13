@@ -1,17 +1,11 @@
 import {
     ButtonInteraction,
-    Guild,
     Message,
     MessageComponentInteraction,
     StringSelectMenuInteraction,
     TextChannel,
 } from 'discord.js';
-import {
-    MatchDraftStep,
-    MatchPlayer,
-    MatchTeam,
-    Guild as dbGuild,
-} from '../../../.prisma';
+import { MatchDraftStep, MatchPlayer, MatchTeam } from '../../../.prisma';
 import { tempReply } from '../../interaction-utils';
 import {
     FullMatchPlayer,
@@ -41,8 +35,6 @@ export async function canDraft(
 
 export async function sendNextStep(
     match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
 ) {
@@ -54,7 +46,7 @@ export async function sendNextStep(
         await message.delete();
     }
 
-    await sendDraftUI(match, guild, dbGuild, teamChannels);
+    await sendDraftUI(match, teamChannels);
 }
 
 export async function processDraftStep(
@@ -62,8 +54,6 @@ export async function processDraftStep(
     team: MatchTeam,
     step: MatchDraftStep,
     i: StringSelectMenuInteraction,
-    guild: Guild,
-    dbGuild: dbGuild,
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
 ) {
@@ -81,6 +71,7 @@ export async function processDraftStep(
         updated = true;
     }
     if (step.type === 'PICK') {
+        // TODO: global pick
         await match.updateTeam(team.id, {
             picks: {
                 create: {
@@ -94,13 +85,7 @@ export async function processDraftStep(
 
     if (updated) {
         await tempReply(i, 'Draft action registered!');
-        await sendNextStep(
-            match,
-            guild,
-            dbGuild,
-            teamChannels,
-            draftUIMessages,
-        );
+        await sendNextStep(match, teamChannels, draftUIMessages);
     }
 }
 
@@ -110,8 +95,6 @@ export async function tryClaimCaptain(
     currentDraftTeam: number,
     team: FullMatchTeam,
     match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
     teamChannels: TextChannel[],
     draftUIMessages: Message[],
     tc: TextChannel,
@@ -151,7 +134,7 @@ export async function tryClaimCaptain(
                 await message.delete();
             }
 
-            await sendDraftUI(match, guild, dbGuild, teamChannels);
+            await sendDraftUI(match, teamChannels);
         }, 60000),
     );
 

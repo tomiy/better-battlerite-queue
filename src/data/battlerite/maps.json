@@ -1,0 +1,74 @@
+[
+    {
+        "name": "Mount Araz Day",
+        "weight": 10
+    },
+    {
+        "name": "Mount Araz Night",
+        "weight": 100
+    },
+    {
+        "name": "Orman Temple Day",
+        "weight": 0
+    },
+    {
+        "name": "Orman Temple Night",
+        "weight": 10
+    },
+    {
+        "name": "Sky Ring Day",
+        "weight": 0
+    },
+    {
+        "name": "Sky Ring Night",
+        "weight": 15
+    },
+    {
+        "name": "Blackstone Arena Day",
+        "weight": 100
+    },
+    {
+        "name": "Blackstone Arena Night",
+        "weight": 100
+    },
+    {
+        "name": "Dragon Garden Day",
+        "weight": 100
+    },
+    {
+        "name": "Dragon Garden Night",
+        "weight": 100
+    },
+    {
+        "name": "Daharin Battlegrounds Day",
+        "weight": 50
+    },
+    {
+        "name": "Daharin Battlegrounds Night",
+        "weight": 50
+    },
+    {
+        "name": "Misty Woods Day",
+        "weight": 0
+    },
+    {
+        "name": "Misty Woods Night",
+        "weight": 0
+    },
+    {
+        "name": "Meriko Summit Day",
+        "weight": 50
+    },
+    {
+        "name": "Meriko Summit Night",
+        "weight": 50
+    },
+    {
+        "name": "The Great Market Day",
+        "weight": 100
+    },
+    {
+        "name": "The Great Market Night",
+        "weight": 100
+    }
+]

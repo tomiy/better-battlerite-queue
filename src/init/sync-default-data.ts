@@ -1,16 +1,15 @@
 import { Guild } from 'discord.js';
 import {
+    defaultDataFolder,
     defaultDraftSequence,
     defaultDraftSequenceName,
     prisma,
 } from '../config';
-import { getDefaultMappings as getDefaultChampionMappings } from '../data/championMappings';
-import { getDefaultMappings as getDefaultMapMappings } from '../data/mapMappings';
 import { DebugUtils } from '../debug-utils';
 
 export async function syncDefaultData(guild: Guild) {
     const dbGuild = await prisma.guild.findFirstOrThrow({
-        where: { guildDiscordId: guild.id },
+        where: { discordId: guild.id },
     });
 
     const anyMapData = await prisma.mapData.findFirst();
@@ -20,8 +19,18 @@ export async function syncDefaultData(guild: Guild) {
             `[Sync default data] Syncing default map data for guild ${guild.id}`,
         );
 
+        const defaultMapData = await import(
+            `../data/${defaultDataFolder}/maps.json`
+        );
+
         const mapData = await prisma.mapData.createMany({
-            data: getDefaultMapMappings(dbGuild.id),
+            data: defaultMapData.default.map(
+                (m: { name: string; weight: number }) => ({
+                    guildId: dbGuild.id,
+                    name: m.name,
+                    weight: m.weight,
+                }),
+            ),
         });
 
         if (!mapData) {
@@ -42,8 +51,18 @@ export async function syncDefaultData(guild: Guild) {
             `[Sync default data] Syncing default champion data for guild ${guild.id}`,
         );
 
+        const defaultChampionData = await import(
+            `../data/${defaultDataFolder}/champions.json`
+        );
+
         const championData = await prisma.championData.createMany({
-            data: getDefaultChampionMappings(dbGuild.id),
+            data: defaultChampionData.default.map(
+                (c: { name: string; restrictions?: string }) => ({
+                    guildId: dbGuild.id,
+                    name: c.name,
+                    restrictions: c.restrictions || '',
+                }),
+            ),
         });
 
         if (!championData) {

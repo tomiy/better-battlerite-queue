@@ -1,8 +1,8 @@
 import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
-import { botModGuard } from '../../guards/bot-mod.guard';
-import { botSetup } from '../../guards/bot-setup.guard';
 import { Command } from '../command';
+import { botCommandsChannel } from '../guards/bot-command-channel.guard';
+import { botModGuard } from '../guards/bot-mod.guard';
+import { botSetup } from '../guards/bot-setup.guard';
 
 const data = new SlashCommandBuilder()
     .setName('ping')

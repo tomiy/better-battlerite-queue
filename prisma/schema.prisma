@@ -12,17 +12,21 @@ datasource db {
 }
 
 model Guild {
-    id                  Int      @id @default(autoincrement())
-    guildDiscordId      String   @unique
+    id        Int    @id @default(autoincrement())
+    discordId String @unique
+
     botCommandsChannel  String?
     queueChannel        String?
     matchHistoryChannel String?
-    botModRole          String?
-    registeredRole      String?
-    matchRole           String?
-    queueRole           String?
-    members             Member[]
 
+    botModRole     String?
+    registeredRole String?
+    matchRole      String?
+    queueRole      String?
+
+    members Member[]
+
+    matches      Match[]
     mapData      MapData[]
     championData ChampionData[]
 
@@ -67,7 +71,10 @@ model Queue {
 }
 
 model Match {
-    id    Int         @id @default(autoincrement())
+    id      Int   @id @default(autoincrement())
+    guild   Guild @relation(fields: [guildId], references: [id])
+    guildId Int
+
     teams MatchTeam[]
     state MatchState  @default(NEW)
 
@@ -78,8 +85,8 @@ model Match {
     draftSequenceId  Int
     currentDraftStep Int                @default(0)
 
-    matchHistoryMessage String?
-    teamWin             Int?
+    historyMessage String?
+    teamWin        Int?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -112,12 +119,14 @@ model MatchTeam {
     match   Match @relation(fields: [matchId], references: [id])
     matchId Int
 
-    order       Int
-    players     MatchPlayer[]
-    teamChannel String?
+    order Int
 
-    bans  MatchBan[]
-    picks MatchPick[]
+    teamChannel  String?
+    draftMessage String?
+
+    players MatchPlayer[]
+    bans    MatchBan[]
+    picks   MatchPick[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -145,6 +154,7 @@ model MatchPick {
     champion   ChampionData @relation(fields: [championId], references: [id])
     championId Int
     draftOrder Int
+    global     Boolean      @default(false)
 
     matchTeam   MatchTeam @relation(fields: [matchTeamId], references: [id])
     matchTeamId Int
@@ -172,8 +182,7 @@ model ChampionData {
     guild   Guild @relation(fields: [guildId], references: [id])
     guildId Int
 
-    champion     Champion
-    type         ChampionType
+    name         String @unique
     restrictions String
 
     matchPicks MatchPick[]
@@ -188,9 +197,8 @@ model MapData {
     guild   Guild @relation(fields: [guildId], references: [id])
     guildId Int
 
-    map     Map
-    variant MapVariant
-    weight  Int
+    name   String
+    weight Int
 
     matches Match[]
 
@@ -207,6 +215,7 @@ enum MatchState {
 }
 
 enum DraftStep {
+    GLOBAL_PICK
     GLOBAL_BAN
     BAN
     PICK
@@ -216,60 +225,4 @@ enum Region {
     EU
     NA
     SA
-}
-
-enum ChampionType {
-    MELEE
-    RANGED
-    SUPPORT
-}
-
-enum Champion {
-    BAKKO
-    CROAK
-    FREYA
-    JAMILA
-    RAIGON
-    ROOK
-    RUH_KAAN
-    SHIFU
-    THORN
-
-    ALYSIA
-    ASHKA
-    DESTINY
-    EZMO
-    IVA
-    JADE
-    JUMONG
-    SHEN_RAO
-    TAYA
-    VARESH
-
-    BLOSSOM
-    LUCIE
-    OLDUR
-    PEARL
-    PESTILUS
-    POLOMA
-    SIRIUS
-    ULRIC
-    ZANDER
-}
-
-enum MapVariant {
-    DAY
-    NIGHT
-}
-
-enum Map {
-    MOUNT_ARAZ
-    ORMAN_TEMPLE
-    SKY_RING
-    BLACKSTONE_ARENA
-    DRAGON_GARDEN
-    DAHARIN_BATTLEGROUNDS
-    MISTY_WOODS
-    MERIKO_SUMMIT
-    THE_GREAT_MARKET
 }

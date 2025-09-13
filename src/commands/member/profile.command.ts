@@ -10,10 +10,10 @@ import {
 import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
-import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
-import { botSetup } from '../../guards/bot-setup.guard';
 import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
+import { botCommandsChannel } from '../guards/bot-command-channel.guard';
+import { botSetup } from '../guards/bot-setup.guard';
 
 const data = new SlashCommandBuilder()
     .setName('profile')

@@ -5,11 +5,11 @@ import {
 } from 'discord.js';
 import { prisma } from '../../config';
 import { DebugUtils } from '../../debug-utils';
-import { botCommandsChannel } from '../../guards/bot-command-channel.guard';
-import { botModGuard } from '../../guards/bot-mod.guard';
-import { botSetup } from '../../guards/bot-setup.guard';
 import { tempReply } from '../../interaction-utils';
 import { Command } from '../command';
+import { botCommandsChannel } from '../guards/bot-command-channel.guard';
+import { botModGuard } from '../guards/bot-mod.guard';
+import { botSetup } from '../guards/bot-setup.guard';
 
 const data = new SlashCommandBuilder()
     .setName('queue')
@@ -39,7 +39,7 @@ async function execute(interaction: CommandInteraction) {
     }
 
     const dbGuild = await prisma.guild.findFirstOrThrow({
-        where: { guildDiscordId: guild.id },
+        where: { discordId: guild.id },
     });
 
     const queueRole = dbGuild.queueRole;
@@ -66,7 +66,7 @@ async function execute(interaction: CommandInteraction) {
         }
 
         await prisma.queue.deleteMany({
-            where: { member: { guild: { guildDiscordId: guild.id } } },
+            where: { member: { guild: { discordId: guild.id } } },
         });
 
         await tempReply(interaction, 'Queue reset!');

@@ -1,18 +1,16 @@
 import {
     APIEmbedField,
     ColorResolvable,
+    EmbedAuthorOptions,
     EmbedBuilder,
-    Guild,
     userMention,
 } from 'discord.js';
 import { MatchDraftStep, MatchState } from '../../.prisma';
-import { championToChampionName } from '../data/championMappings';
-import { maptoMapName } from '../data/mapMappings';
+import { client } from '../config';
 import { MatchRepository } from '../repository/match.repository';
 
 export function buildMatchEmbed(
     match: MatchRepository,
-    guild: Guild,
     currentDraftTeam?: number,
     draftStep?: MatchDraftStep,
 ): EmbedBuilder {
@@ -33,11 +31,7 @@ export function buildMatchEmbed(
     const teamBansFields: APIEmbedField[] = match.teams.map((t) => {
         const teamBans = t.bans
             .sort((a, b) => a.draftOrder - b.draftOrder)
-            .map(
-                (b) =>
-                    (championToChampionName.get(b.champion.champion) ||
-                        'Unknown') + (b.global ? ' (global)' : ''),
-            )
+            .map((b) => b.champion.name + (b.global ? ' (global)' : ''))
             .join('\n');
         return {
             name: `Team ${t.order + 1} bans`,
@@ -49,11 +43,7 @@ export function buildMatchEmbed(
     const teamPicksFields: APIEmbedField[] = match.teams.map((t) => {
         const teamPicks = t.picks
             .sort((a, b) => a.draftOrder - b.draftOrder)
-            .map(
-                (p) =>
-                    championToChampionName.get(p.champion.champion) ||
-                    'Unknown',
-            )
+            .map((p) => p.champion.name)
             .join('\n');
         return {
             name: `Team ${t.order + 1} picks`,
@@ -62,11 +52,8 @@ export function buildMatchEmbed(
         };
     });
 
-    const mapName = maptoMapName.get(match.data.map.map) || 'Unknown';
-    const mapVariantName = match.data.map.variant === 'DAY' ? 'Day' : 'Night';
-
     const infoFields: APIEmbedField[] = [
-        { name: 'Map', value: `${mapName} ${mapVariantName}` },
+        { name: 'Map', value: match.data.map.name },
     ];
 
     if (
@@ -85,7 +72,7 @@ export function buildMatchEmbed(
         t.picks.forEach((p) => {
             if (p.champion.restrictions) {
                 allRestrictions.push(
-                    `${championToChampionName.get(p.champion.champion)}: ${p.champion.restrictions}`,
+                    `${p.champion.name}: ${p.champion.restrictions}`,
                 );
             }
         });
@@ -134,11 +121,17 @@ export function buildMatchEmbed(
         });
     }
 
+    const guild = client.guilds.cache.get(match.data.guild.discordId);
+    const icon = guild?.iconURL();
+
+    const author: EmbedAuthorOptions = { name: `Match #${match.data.id}` };
+
+    if (icon) {
+        author.iconURL = icon;
+    }
+
     return new EmbedBuilder()
-        .setAuthor({
-            name: `Match #${match.data.id}`,
-            iconURL: guild.iconURL() || '',
-        })
+        .setAuthor(author)
         .setColor(getEmbedColor(match.data.state))
         .addFields(teamsFields)
         .addFields({ name: '\u200B', value: '\u200B', inline: true }) // cool hack to align inline fields

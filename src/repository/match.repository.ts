@@ -1,4 +1,4 @@
-import { MapData, MatchDraftSequence, Prisma } from '../../.prisma';
+import { Prisma } from '../../.prisma';
 import { prisma } from '../config';
 
 export const fullMatchPlayerInclude = { include: { member: true } };
@@ -13,6 +13,7 @@ export const fullMatchTeamInclude = {
 
 export const fullMatchInclude = {
     include: {
+        guild: true,
         map: true,
         draftSequence: { include: { steps: true } },
         teams: fullMatchTeamInclude,
@@ -77,19 +78,21 @@ export class MatchRepository {
     }
 
     public static async create(
-        map: MapData,
+        guildId: number,
+        mapId: number,
         teams: Prisma.MatchTeamCreateManyMatchInput[],
-        draftSequence: MatchDraftSequence,
+        draftSequenceId: number,
     ) {
         const newMatch: FullMatch = await prisma.match.create({
             data: {
-                mapId: map.id,
+                guildId: guildId,
+                mapId: mapId,
                 teams: {
                     createMany: {
                         data: teams,
                     },
                 },
-                draftSequenceId: draftSequence.id,
+                draftSequenceId: draftSequenceId,
             },
             include: fullMatchInclude.include,
         });

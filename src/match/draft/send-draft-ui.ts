@@ -1,12 +1,10 @@
 import {
     ComponentType,
-    Guild,
     Message,
     MessageFlags,
     TextChannel,
     userMention,
 } from 'discord.js';
-import { Guild as dbGuild } from '../../../.prisma';
 import { prisma } from '../../config';
 import { tempReply } from '../../interaction-utils';
 import { MatchRepository } from '../../repository/match.repository';
@@ -23,15 +21,13 @@ import {
 
 export async function sendDraftUI(
     match: MatchRepository,
-    guild: Guild,
-    dbGuild: dbGuild,
     teamChannels: TextChannel[],
 ) {
     const totalSteps =
         match.data.draftSequence.steps.length * match.teams.length;
 
     if (match.data.currentDraftStep >= totalSteps) {
-        sendReportUI(match, guild, dbGuild, teamChannels);
+        sendReportUI(match, teamChannels);
         return;
     }
 
@@ -53,17 +49,13 @@ export async function sendDraftUI(
     }
 
     const champions = await prisma.championData.findMany({
-        where: { guildId: dbGuild.id },
+        where: { guildId: match.data.guild.id },
+        orderBy: { name: 'asc' },
     });
 
-    const mainEmbed = buildMatchEmbed(
-        match,
-        guild,
-        currentDraftTeam,
-        draftStep,
-    );
+    const mainEmbed = buildMatchEmbed(match, currentDraftTeam, draftStep);
 
-    const categoryButtonsRow = buildDraftButtons();
+    const categoryButtonsRows = buildDraftButtons();
 
     const draftUIMessages: Message[] = [];
 
@@ -82,9 +74,16 @@ export async function sendDraftUI(
             );
         }
 
+        const select = buildDraftSelectionLists(
+            match,
+            matchingTeam,
+            draftStep,
+            champions,
+        );
+
         const draftUIMessage = await tc.send({
             embeds: [mainEmbed],
-            components: [categoryButtonsRow],
+            components: [select, ...categoryButtonsRows],
         });
         draftUIMessages.push(draftUIMessage);
 
@@ -102,6 +101,7 @@ export async function sendDraftUI(
             componentType: ComponentType.StringSelect,
         });
 
+        let currentPage = 0;
         buttonCollector?.on('collect', async (i) => {
             const matchingPlayer = match.players.find(
                 (u) => u.member.discordId === i.member.id,
@@ -116,8 +116,6 @@ export async function sendDraftUI(
                         currentDraftTeam,
                         matchingTeam,
                         match,
-                        guild,
-                        dbGuild,
                         teamChannels,
                         draftUIMessages,
                         tc,
@@ -139,7 +137,7 @@ export async function sendDraftUI(
                         }
 
                         await tempReply(i, 'Vote registered!');
-                        await tryMatchConclusion(match, guild, dbGuild);
+                        await tryMatchConclusion(match);
 
                         return;
                     }
@@ -154,33 +152,32 @@ export async function sendDraftUI(
 
             await i.deferUpdate();
 
-            const row = buildDraftSelectionLists(
+            switch (i.customId) {
+                case 'previousPageButton':
+                    clearCaptainClaimTimeouts(matchingTeam.id);
+                    if (currentPage > 0) {
+                        currentPage--;
+                    }
+                    break;
+                case 'nextPageButton':
+                    clearCaptainClaimTimeouts(matchingTeam.id);
+                    if (currentPage < Math.floor(champions.length / 25)) {
+                        currentPage++;
+                    }
+                    break;
+            }
+
+            const select = buildDraftSelectionLists(
                 match,
                 matchingTeam,
                 draftStep,
                 champions,
+                currentPage,
             );
 
-            switch (i.customId) {
-                case 'meleeButton':
-                    clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.editReply({
-                        components: [categoryButtonsRow, row.melee],
-                    });
-                    break;
-                case 'rangedButton':
-                    clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.editReply({
-                        components: [categoryButtonsRow, row.ranged],
-                    });
-                    break;
-                case 'supportButton':
-                    clearCaptainClaimTimeouts(matchingTeam.id);
-                    await i.editReply({
-                        components: [categoryButtonsRow, row.support],
-                    });
-                    break;
-            }
+            await i.editReply({
+                components: [select, ...categoryButtonsRows],
+            });
         });
 
         selectCollector.on('collect', async (i) => {
@@ -191,17 +188,13 @@ export async function sendDraftUI(
             }
 
             switch (i.customId) {
-                case 'meleeList':
-                case 'rangedList':
-                case 'supportList':
+                case 'championList':
                     clearCaptainClaimTimeouts(matchingTeam.id);
                     await processDraftStep(
                         match,
                         matchingTeam,
                         draftStep,
                         i,
-                        guild,
-                        dbGuild,
                         teamChannels,
                         draftUIMessages,
                     );

@@ -1,7 +1,7 @@
 import { CommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Guild as dbGuild } from '../../.prisma';
 import { prisma } from '../config';
-import { GuardFunction } from '../guards/guard';
+import { GuardFunction } from './guards/guard.type';
 
 export type Command = {
     data: SlashCommandBuilder;
@@ -17,7 +17,7 @@ export async function executeCommand(
     interaction: CommandInteraction,
 ) {
     const dbGuild = await prisma.guild.findFirstOrThrow({
-        where: { guildDiscordId: interaction.guildId || '' },
+        where: { discordId: interaction.guildId || '' },
     });
 
     for (const guard of command.guards) {
