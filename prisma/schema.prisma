@@ -11,199 +11,363 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Guild {
-    id        Int    @id @default(autoincrement())
+model Server {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
     discordId String @unique
 
-    botCommandsChannel  String?
-    queueChannel        String?
-    matchHistoryChannel String?
+    categoryChannelId     String?
+    botCommandsChannelId  String?
+    queueChannelId        String?
+    matchHistoryChannelId String?
 
-    botModRole     String?
-    registeredRole String?
-    matchRole      String?
-    queueRole      String?
+    botModRoleId     String?
+    registeredRoleId String?
+    matchRoleId      String?
+    queueRoleId      String?
 
-    members Member[]
-
-    matches      Match[]
-    mapData      MapData[]
-    championData ChampionData[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    serverGames ServerGame[]
 }
 
-model Member {
-    id          Int            @id @default(autoincrement())
-    discordId   String         @unique
-    guild       Guild          @relation(fields: [guildId], references: [id])
-    guildId     Int
+model Game {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String @unique
+
+    terrains   Terrain[]
+    characters Character[]
+
+    serverGames ServerGame[]
+}
+
+model ServerGame {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+    gameId Int
+
+    server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+    serverId Int
+
+    regions  ServerGameRegion[]
+    profiles ServerGameProfile[]
+
+    gameModes GameMode[]
+
+    @@unique([gameId, serverId])
+}
+
+model ServerGameRegion {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    serverGame   ServerGame @relation(fields: [serverGameId], references: [id], onDelete: Cascade)
+    serverGameId Int
+
+    profileRegions ServerGameProfileRegion[]
+
+    @@unique([name, serverGameId])
+}
+
+model ServerGameProfile {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    discordId String
+
     inGameName  String
     description String?
-    regions     MemberRegion[]
-    elo         Int            @default(1000)
+    restricted  Boolean @default(false)
 
-    queue        Queue?
+    serverGame   ServerGame @relation(fields: [serverGameId], references: [id], onDelete: Cascade)
+    serverGameId Int
+
+    regions      ServerGameProfileRegion[]
     matchPlayers MatchPlayer[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    queueEntries QueueEntry[]
+
+    matchDraftActions MatchDraftAction[]
+
+    ratings Rating[]
+
+    @@unique([discordId, serverGameId])
 }
 
-model MemberRegion {
-    id       Int    @id @default(autoincrement())
-    member   Member @relation(fields: [memberId], references: [id])
-    memberId Int
-    region   Region
-
+model Rating {
+    id        Int      @id @default(autoincrement())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    elo Int @default(1000)
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int
+
+    serverGameProfile   ServerGameProfile @relation(fields: [serverGameProfileId], references: [id], onDelete: Cascade)
+    serverGameProfileId Int
+
+    @@unique([gameModeId, serverGameProfileId])
 }
 
-model Queue {
-    id       Int    @id @default(autoincrement())
-    member   Member @relation(fields: [memberId], references: [id])
-    memberId Int    @unique
-
+model ServerGameProfileRegion {
+    id        Int      @id @default(autoincrement())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    profile   ServerGameProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+    profileId Int
+
+    serverGameRegion   ServerGameRegion @relation(fields: [serverGameRegionId], references: [id], onDelete: Cascade)
+    serverGameRegionId Int
+
+    @@unique([profileId, serverGameRegionId])
+}
+
+model Terrain {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+    gameId Int
+
+    gameModeTerrains GameModeTerrain[]
+
+    @@unique([name, gameId])
+}
+
+model Character {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name String
+
+    game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+    gameId Int
+
+    gameModeCharacters GameModeCharacter[]
+
+    @@unique([name, gameId])
+}
+
+model GameMode {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    name           String
+    teamCount      Int
+    queueable      Boolean @default(false)
+    queueMessageId String?
+
+    serverGame   ServerGame @relation(fields: [serverGameId], references: [id], onDelete: Cascade)
+    serverGameId Int
+
+    draftSequence DraftSequence?
+
+    terrains   GameModeTerrain[]
+    characters GameModeCharacter[]
+
+    queueEntries QueueEntry[]
+
+    matches Match[]
+    ratings Rating[]
+
+    @@unique([name, serverGameId])
+}
+
+model DraftSequence {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    type     DraftSequenceType
+    teamSize Int
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int      @unique
+
+    steps DraftStep[]
+}
+
+model DraftStep {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    type  DraftStepType
+    order Int
+
+    draftSequence   DraftSequence @relation(fields: [draftSequenceId], references: [id], onDelete: Cascade)
+    draftSequenceId Int
+}
+
+model QueueEntry {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int
+
+    serverGameProfile   ServerGameProfile @relation(fields: [serverGameProfileId], references: [id], onDelete: Cascade)
+    serverGameProfileId Int
+
+    @@unique([gameModeId, serverGameProfileId])
+}
+
+model GameModeTerrain {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    weight Int @default(100)
+
+    terrain   Terrain @relation(fields: [terrainId], references: [id], onDelete: Cascade)
+    terrainId Int
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int
+
+    matches           Match[]
+    matchDraftActions MatchDraftAction[]
+
+    @@unique([terrainId, gameModeId])
+}
+
+model GameModeCharacter {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    enabled      Boolean @default(true)
+    restrictions String?
+
+    character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+    characterId Int
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int
+
+    matchDraftActions MatchDraftAction[]
+
+    @@unique([characterId, gameModeId])
 }
 
 model Match {
-    id      Int   @id @default(autoincrement())
-    guild   Guild @relation(fields: [guildId], references: [id])
-    guildId Int
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    lobbyCode String?
+
+    state MatchState
+
+    historyMessageId String?
+
+    winningTeam Int?
+
+    gameMode   GameMode @relation(fields: [gameModeId], references: [id], onDelete: Cascade)
+    gameModeId Int
+
+    gameModeTerrain   GameModeTerrain? @relation(fields: [gameModeTerrainId], references: [id], onDelete: Cascade)
+    gameModeTerrainId Int?
 
     teams MatchTeam[]
-    state MatchState  @default(NEW)
-
-    map   MapData @relation(fields: [mapId], references: [id])
-    mapId Int
-
-    draftSequence    MatchDraftSequence @relation(fields: [draftSequenceId], references: [id])
-    draftSequenceId  Int
-    currentDraftStep Int                @default(0)
-
-    historyMessage String?
-    teamWin        Int?
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
-model MatchDraftSequence {
-    id      Int              @id @default(autoincrement())
-    name    String
-    steps   MatchDraftStep[]
-    matches Match[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
-model MatchDraftStep {
-    id    Int       @id @default(autoincrement())
-    type  DraftStep
-    order Int
-
-    sequence   MatchDraftSequence @relation(fields: [sequenceId], references: [id])
-    sequenceId Int
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
 }
 
 model MatchTeam {
-    id      Int   @id @default(autoincrement())
-    match   Match @relation(fields: [matchId], references: [id])
-    matchId Int
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
     order Int
 
-    teamChannel  String?
-    draftMessage String?
+    draftChannelId String?
+    draftMessageId String?
+
+    match   Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+    matchId Int
 
     players MatchPlayer[]
-    bans    MatchBan[]
-    picks   MatchPick[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    draftActions MatchDraftAction[]
+
+    @@unique([matchId, order])
 }
 
 model MatchPlayer {
-    id       Int       @id @default(autoincrement())
-    member   Member    @relation(fields: [memberId], references: [id])
-    memberId Int
-    team     MatchTeam @relation(fields: [teamId], references: [id])
-    teamId   Int
-    captain  Boolean
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-    teamWinReport Int?
-    dropReport    Boolean @default(false)
+    captain Boolean @default(false)
+
+    winReport  Int?
+    dropReport Boolean @default(false)
 
     ratingChange Int @default(0)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    serverGameProfile   ServerGameProfile @relation(fields: [serverGameProfileId], references: [id], onDelete: Cascade)
+    serverGameProfileId Int
+
+    team   MatchTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+    teamId Int
+
+    @@unique([serverGameProfileId, teamId])
 }
 
-model MatchPick {
-    id         Int          @id @default(autoincrement())
-    champion   ChampionData @relation(fields: [championId], references: [id])
-    championId Int
-    draftOrder Int
-    global     Boolean      @default(false)
-
-    matchTeam   MatchTeam @relation(fields: [matchTeamId], references: [id])
-    matchTeamId Int
-
+model MatchDraftAction {
+    id        Int      @id @default(autoincrement())
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
+
+    type   DraftStepType
+    order  Int
+    global Boolean       @default(false)
+
+    team   MatchTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
+    teamId Int
+
+    serverGameProfile   ServerGameProfile? @relation(fields: [serverGameProfileId], references: [id], onDelete: Cascade)
+    serverGameProfileId Int?
+
+    gameModeTerrain   GameModeTerrain? @relation(fields: [gameModeTerrainId], references: [id], onDelete: Cascade)
+    gameModeTerrainId Int?
+
+    gameModeCharacter   GameModeCharacter? @relation(fields: [gameModeCharacterId], references: [id], onDelete: Cascade)
+    gameModeCharacterId Int?
+
+    @@unique([teamId, order])
 }
 
-model MatchBan {
-    id         Int          @id @default(autoincrement())
-    champion   ChampionData @relation(fields: [championId], references: [id])
-    championId Int
-    draftOrder Int
-    global     Boolean      @default(false)
-
-    matchTeam   MatchTeam @relation(fields: [matchTeamId], references: [id])
-    matchTeamId Int
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+enum DraftSequenceType {
+    SEQUENTIAL
+    SIMULTANEOUS
 }
 
-model ChampionData {
-    id      Int   @id @default(autoincrement())
-    guild   Guild @relation(fields: [guildId], references: [id])
-    guildId Int
-
-    name         String @unique
-    restrictions String
-
-    matchPicks MatchPick[]
-    matchBans  MatchBan[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-}
-
-model MapData {
-    id      Int   @id @default(autoincrement())
-    guild   Guild @relation(fields: [guildId], references: [id])
-    guildId Int
-
-    name   String
-    weight Int
-
-    matches Match[]
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+enum DraftStepType {
+    PLAYER_PICK
+    TERRAIN_BAN
+    TERRAIN_PICK
+    CHARACTER_GLOBAL_BAN
+    CHARACTER_GLOBAL_PICK
+    CHARACTER_BAN
+    CHARACTER_PICK
 }
 
 enum MatchState {
@@ -212,17 +376,4 @@ enum MatchState {
     ONGOING
     FINISHED
     DROPPED
-}
-
-enum DraftStep {
-    GLOBAL_PICK
-    GLOBAL_BAN
-    BAN
-    PICK
-}
-
-enum Region {
-    EU
-    NA
-    SA
 }
