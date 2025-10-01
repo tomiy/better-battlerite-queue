@@ -1,3 +1,5 @@
+.idea
+
 node_modules
 coverage
 dist
@@ -7,3 +9,5 @@ dist
 prisma/migrations
 .prisma
 db.sqlite
+
+_old

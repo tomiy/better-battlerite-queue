@@ -1,0 +1,57 @@
+export const CommandName = {
+    GAME: 'game',
+    GAME_ADD: 'add',
+    GAME_LIST: 'list',
+    GAME_DELETE: 'delete',
+
+    GAME_REGION: 'region',
+    GAME_REGION_ADD: 'add',
+    GAME_REGION_LIST: 'list',
+    GAME_REGION_DELETE: 'delete',
+
+    GAME_MODE: 'mode',
+    GAME_MODE_ADD: 'add',
+    GAME_MODE_LIST: 'list',
+    GAME_MODE_DELETE: 'delete',
+    GAME_MODE_SYNC: 'sync',
+
+    GAME_TERRAIN: 'terrain',
+    GAME_TERRAIN_ADD: 'add',
+    GAME_TERRAIN_LIST: 'list',
+    GAME_TERRAIN_EDIT: 'edit',
+    GAME_TERRAIN_DELETE: 'delete',
+
+    GAME_CHARACTER: 'character',
+    GAME_CHARACTER_ADD: 'add',
+    GAME_CHARACTER_LIST: 'list',
+    GAME_CHARACTER_EDIT: 'edit',
+    GAME_CHARACTER_DELETE: 'delete',
+    GAME_CHARACTER_ENABLE: 'enable',
+    GAME_CHARACTER_DISABLE: 'disable',
+
+    DRAFT: 'draft',
+    DRAFT_SEQUENCE: 'sequence',
+    DRAFT_SEQUENCE_ADD: 'add',
+    DRAFT_SEQUENCE_LIST: 'list',
+    DRAFT_SEQUENCE_DELETE: 'delete',
+
+    QUEUE: 'queue',
+    QUEUE_ENABLE: 'enable',
+    QUEUE_DISABLE: 'disable',
+    QUEUE_JOIN: 'join',
+    QUEUE_JOIN_BUTTON: 'queueJoin',
+    QUEUE_LEAVE: 'leave',
+    QUEUE_LEAVE_BUTTON: 'queueLeave',
+
+    MATCH: 'match',
+    MATCH_CREATE: 'create',
+    MATCH_JOIN: 'join',
+    MATCH_LEAVE: 'leave',
+    MATCH_DROP: 'drop',
+
+    PROFILE: 'profile',
+    PROFILE_EDIT: 'edit',
+    PROFILE_REGION: 'region',
+    PROFILE_REGION_ENABLE: 'enable',
+    PROFILE_REGION_DISABLE: 'disable',
+};
