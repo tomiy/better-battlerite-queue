@@ -1,4 +1,4 @@
-## Better Battlerite Queue
+## Better Private Lobbies
 
 <a name="readme-top"></a>
 
@@ -11,13 +11,13 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-<h1 align="center">Better Battlerite Queue</h1>
+<h1 align="center">Better Private Lobbies</h1>
   <p align="center">
-    A discord bot to organize private games for <a href="https://arena.battlerite.com/">Battlerite Arena</a>.
+    A discord bot to organize private lobbies for pvp games.
     <br />
-    <a href="https://github.com/tomiy/better-battlerite-queue/issues">Report Bug</a>
+    <a href="https://github.com/tomiy/better-private-lobbies/issues">Report Bug</a>
     ·
-    <a href="https://github.com/tomiy/better-battlerite-queue/issues">Request Feature</a>
+    <a href="https://github.com/tomiy/better-private-lobbies/issues">Request Feature</a>
   </p>
 </div>
 
@@ -48,7 +48,9 @@
 
 ## About The Project
 
-A discord bot to organize private games for <a href="https://arena.battlerite.com/">Battlerite Arena</a>.
+A discord bot to organize private lobbies for pvp games.
+
+Originally designed for <a href="https://arena.battlerite.com/">Battlerite Arena</a> but can be used for any game with characters and terrains.
 
 Features a queue with regions, a draft & a match report system.
 
@@ -70,7 +72,7 @@ To get a local copy up and running follow these steps.
 
 1. Clone the repo
     ```sh
-    git clone https://github.com/tomiy/better-battlerite-queue.git
+    git clone https://github.com/tomiy/better-private-lobbies.git
     ```
 2. Install NPM packages
     ```sh
@@ -92,21 +94,21 @@ To get a local copy up and running follow these steps.
 
 ## Usage
 
-The bot auto-syncs guilds, channels, roles & members between discord servers and the internal db to ensure minimal required setup: just add it to the server and launch the queue!
+The bot auto-syncs guilds, channels, roles & members between discord servers and the internal db to ensure minimal required setup.
 
 A `Bot Moderator` role will be created automatically. The bot recognizes this role as authorized for admin commands.
 
-Bot Moderators will need to `/launch` the queue whenever the bot (re)starts to create the queue options.
+Moderators will need to create game modes for one of the supported games before matches or queues can be made.
 
 Players will need to `/register` with an in game username and enable at least one region to queue.
 
 Players can edit their `/profile` at any time.
 
-During the draft, team captains can choose a champions to pick or ban from the lists available through the category buttons.
+During the draft, team captains can choose players, terrains or characters to pick or ban from the lists available.
 
-During the team's turn, if the captain is unresponsive, other team members may claim the captain role after a 1 minute timeout.
+During the team's turn, if the captain is unresponsive, other team members may claim the captain role after a 1-minute timeout.
 
-After the draft, players may report the match's outcome by voting for the option with the buttons provided.
+After the draft, players may report the match's outcome by voting for the option from the list provided.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -116,23 +118,16 @@ After the draft, players may report the match's outcome by voting for the option
 
 TODO:
 
-- Store messages id in db to make function signatures lighter
-- Rewrite with classes - ongoing
-- Create utility functions/classes to update & return full orm objects - ongoing
-- Champ & Map modals to edit restrictions & weights
+- Implement & test player & terrain draft
 - Seasons
-- User profiles (w/ graphs: **low prio**)
+- User profiles w/ graphs: **low priority**
 - Leaderboards
-- Manage draft sequences
-- Add GLOBAL_PICK option (for games with no global duplicate champs)
 
 MAYBE:
 
-- Player draft
-- Buttons instead of commands for most stuff
 - Poll queue instead of Event driven (prevents match collisions but obligatory wait times)
 
-See the [open issues](https://github.com/tomiy/better-battlerite-queue/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/tomiy/better-private-lobbies/issues) for a full list of proposed features (and known issues).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -157,7 +152,7 @@ Don't forget to give the project a star! Thanks again!
 
 ## License
 
-Distributed under the GPL-3.0 License. See `LICENSE` for more information.
+Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -167,7 +162,7 @@ Distributed under the GPL-3.0 License. See `LICENSE` for more information.
 
 Tomiy - [@**tomiy**](https://twitter.com/__tomiy__)
 
-Project Link: [https://github.com/tomiy/better-battlerite-queue](https://github.com/tomiy/better-battlerite-queue)
+Project Link: [https://github.com/tomiy/better-private-lobbies](https://github.com/tomiy/better-private-lobbies)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -175,20 +170,29 @@ Project Link: [https://github.com/tomiy/better-battlerite-queue](https://github.
 
 ## Acknowledgments
 
-[Ehri/Xeyth](https://github.com/Xeythhhh) and anyone who has worked on the now unmaintained [BCL](https://github.com/Xeythhhh/Battlerite-Community-League) bot for their huge kickstart help and inspiration.
+[Ehri/Xeyth](https://github.com/Xeythhhh) and anyone who has worked on the Battlerite Community League bot for their huge kickstart help and inspiration.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/tomiy/better-battlerite-queue.svg?style=for-the-badge
-[contributors-url]: https://github.com/tomiy/better-battlerite-queue/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/tomiy/better-battlerite-queue.svg?style=for-the-badge
-[forks-url]: https://github.com/tomiy/better-battlerite-queue/network/members
-[stars-shield]: https://img.shields.io/github/stars/tomiy/better-battlerite-queue.svg?style=for-the-badge
-[stars-url]: https://github.com/tomiy/better-battlerite-queue/stargazers
-[issues-shield]: https://img.shields.io/github/issues/tomiy/better-battlerite-queue.svg?style=for-the-badge
-[issues-url]: https://github.com/tomiy/better-battlerite-queue/issues
-[license-shield]: https://img.shields.io/github/license/tomiy/better-battlerite-queue.svg?style=for-the-badge
-[license-url]: https://github.com/tomiy/better-battlerite-queue/blob/master/LICENSE.txt
+[contributors-shield]: https://img.shields.io/github/contributors/tomiy/better-private-lobbies.svg?style=for-the-badge
+
+[contributors-url]: https://github.com/tomiy/better-private-lobbies/graphs/contributors
+
+[forks-shield]: https://img.shields.io/github/forks/tomiy/better-private-lobbies.svg?style=for-the-badge
+
+[forks-url]: https://github.com/tomiy/better-private-lobbies/network/members
+
+[stars-shield]: https://img.shields.io/github/stars/tomiy/better-private-lobbies.svg?style=for-the-badge
+
+[stars-url]: https://github.com/tomiy/better-private-lobbies/stargazers
+
+[issues-shield]: https://img.shields.io/github/issues/tomiy/better-private-lobbies.svg?style=for-the-badge
+
+[issues-url]: https://github.com/tomiy/better-private-lobbies/issues
+
+[license-shield]: https://img.shields.io/github/license/tomiy/better-private-lobbies.svg?style=for-the-badge
+
+[license-url]: https://github.com/tomiy/better-private-lobbies/blob/main/LICENSE
